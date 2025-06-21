@@ -3,11 +3,24 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Bell } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+
+interface DashboardStats {
+  pendingRequests?: number;
+}
 
 export default function TopBar() {
   const [location] = useLocation();
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
+
+  const { data: stats } = useQuery<DashboardStats | null>({
+    queryKey: ["/api/dashboard/stats"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+  });
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -25,59 +38,50 @@ export default function TopBar() {
     };
 
     updateDateTime();
-    const intervalId = setInterval(updateDateTime, 1000); // Update time every second
+    const intervalId = setInterval(updateDateTime, 1000);
 
-    return () => clearInterval(intervalId); // Cleanup on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
-  // Improved breadcrumb logic for nested routes
   const getBreadcrumb = () => {
     const path = location;
-    if (path.startsWith("/calendar")) {
-      return { parent: "Dashboard", current: "Calendar" };
-    }
-    if (path.startsWith("/tools")) {
-      return { parent: "Dashboard", current: "Tools" };
-    }
-    if (path.startsWith("/requests")) {
-      return { parent: "Dashboard", current: "Requests" };
-    }
-    if (path.startsWith("/history")) {
-      return { parent: "Dashboard", current: "History" };
-    }
-    if (path === "/") {
-      return { parent: "Dashboard", current: "Overview" };
-    }
-    return { parent: "Dashboard", current: "Page" }; // Fallback
+    if (path.startsWith("/calendar")) return { parent: "Dashboard", current: "Calendar" };
+    if (path.startsWith("/tools")) return { parent: "Dashboard", current: "Tools" };
+    if (path.startsWith("/requests")) return { parent: "Dashboard", current: "Requests" };
+    if (path.startsWith("/history")) return { parent: "Dashboard", current: "History" };
+    if (path.startsWith("/settings")) return { parent: "Dashboard", current: "Settings" };
+    if (path === "/") return { parent: "Dashboard", current: "Overview" };
+    return { parent: "Dashboard", current: "Page" };
   };
 
   const breadcrumb = getBreadcrumb();
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <header className="bg-background/95 backdrop-blur-sm sticky top-0 z-10 border-b border-border/50">
+      <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center space-x-4">
-          <nav className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+          <SidebarTrigger />
+          <nav className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
             <span>{breadcrumb.parent}</span>
             <span>/</span>
-            <span className="text-gray-900 dark:text-white font-medium">
+            <span className="text-foreground font-medium">
               {breadcrumb.current}
             </span>
           </nav>
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" className="relative">
+          <Button variant="ghost" size="icon" className="relative h-8 w-8">
             <Bell className="h-4 w-4" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            {stats && stats.pendingRequests != null && stats.pendingRequests > 0 && (
+               <span className="absolute top-0 right-0 flex h-2 w-2">
+                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+               </span>
+            )}
           </Button>
           
           <ThemeToggle />
-          
-          <div className="flex items-center space-x-2 text-sm">
-            <span className="text-gray-700 dark:text-gray-300">{currentTime}</span>
-            <span className="text-gray-500 dark:text-gray-400">{currentDate}</span>
-          </div>
         </div>
       </div>
     </header>

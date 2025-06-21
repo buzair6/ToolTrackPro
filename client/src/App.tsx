@@ -17,21 +17,25 @@ import Calendar from "@/pages/calendar";
 import Tools from "@/pages/tools";
 import Requests from "@/pages/requests";
 import History from "@/pages/history";
+import SettingsPage from "@/pages/settings";
 import Auth from "@/pages/auth";
 
 // Import layout components
-import Sidebar from "@/components/layout/sidebar";
+import AppSidebar from "@/components/layout/sidebar";
 import TopBar from "@/components/layout/topbar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 lg:ml-64">
-        <TopBar />
-        <main className="p-6">{children}</main>
-      </div>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <div className="flex flex-col h-screen">
+          <TopBar />
+          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
 
@@ -50,12 +54,10 @@ function App() {
     );
   }
 
-  // If the user is not authenticated, show the auth page.
   if (!isAuthenticated) {
     return (
       <Switch>
         <Route path="/" component={Auth} />
-        {/* Redirect any other path to the auth page if not authenticated */}
         <Route>
           <Redirect to="/" />
         </Route>
@@ -63,7 +65,6 @@ function App() {
     );
   }
 
-  // If authenticated, show the main application layout and routes.
   return (
     <MainLayout>
       <Switch>
@@ -72,6 +73,7 @@ function App() {
         <Route path="/tools" component={Tools} />
         <Route path="/requests" component={Requests} />
         <Route path="/history" component={History} />
+        <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
@@ -80,11 +82,10 @@ function App() {
 
 export default function AppWrapper() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="toolbooker-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="toolbooker-theme">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          {/* Wrap the main App component with the ErrorBoundary */}
           <ErrorBoundary>
             <App />
           </ErrorBoundary>
