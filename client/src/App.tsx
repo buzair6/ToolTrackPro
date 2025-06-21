@@ -1,4 +1,7 @@
-import { Switch, Route, Redirect } from "wouter";
+/// <reference types="wouter/switch" />
+
+import { Route, Redirect } from "wouter";
+import Switch from "wouter/switch";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,7 +16,7 @@ import Calendar from "@/pages/calendar";
 import Tools from "@/pages/tools";
 import Requests from "@/pages/requests";
 import History from "@/pages/history";
-import Landing from "@/pages/landing"; // Import the Landing page
+import Landing from "@/pages/landing";
 
 // Import layout components
 import Sidebar from "@/components/layout/sidebar";
