@@ -1,13 +1,14 @@
-/// <reference types="wouter/switch" />
+// <reference types="wouter/switch" />
 
-import { Route, Redirect } from "wouter";
-import Switch from "wouter/switch";
+import { Route, Redirect, Switch } from "wouter"; // Corrected: Switch imported directly from "wouter"
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "@/components/ui/skeleton";
+import ErrorBoundary from "@/components/error-boundary"; // Assuming you've created this file as per previous instructions
 
 // Import page components
 import NotFound from "@/pages/not-found";
@@ -38,7 +39,15 @@ function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900" />;
+    return (
+      <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="space-y-4 w-64">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+        </div>
+      </div>
+    );
   }
 
   // If the user is not authenticated, show the landing page.
@@ -83,7 +92,10 @@ export default function AppWrapper() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          <App />
+          {/* Wrap the main App component with the ErrorBoundary */}
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

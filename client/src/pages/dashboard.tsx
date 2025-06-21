@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "../hooks/useAuth";
+import { getQueryFn } from "../lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { Wrench, CheckCircle, Clock, CalendarX, Plus, ClipboardCheck, Calendar, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -12,11 +13,13 @@ export default function Dashboard() {
 
   const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
   });
 
   const { data: recentBookings, isLoading: bookingsLoading } = useQuery<any[]>({
     queryKey: ["/api/bookings"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
   });
 
@@ -204,3 +207,4 @@ export default function Dashboard() {
     </>
   );
 }
+

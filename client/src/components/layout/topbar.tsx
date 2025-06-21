@@ -2,38 +2,56 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Bell } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function TopBar() {
   const [location] = useLocation();
+  const [currentTime, setCurrentTime] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
 
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }));
+      setCurrentDate(now.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }));
+    };
+
+    updateDateTime();
+    const intervalId = setInterval(updateDateTime, 1000); // Update time every second
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, []);
+
+  // Improved breadcrumb logic for nested routes
   const getBreadcrumb = () => {
-    switch (location) {
-      case "/":
-        return { parent: "Dashboard", current: "Overview" };
-      case "/calendar":
-        return { parent: "Dashboard", current: "Calendar" };
-      case "/tools":
-        return { parent: "Dashboard", current: "Tools" };
-      case "/requests":
-        return { parent: "Dashboard", current: "Requests" };
-      case "/history":
-        return { parent: "Dashboard", current: "History" };
-      default:
-        return { parent: "Dashboard", current: "Overview" };
+    const path = location;
+    if (path.startsWith("/calendar")) {
+      return { parent: "Dashboard", current: "Calendar" };
     }
+    if (path.startsWith("/tools")) {
+      return { parent: "Dashboard", current: "Tools" };
+    }
+    if (path.startsWith("/requests")) {
+      return { parent: "Dashboard", current: "Requests" };
+    }
+    if (path.startsWith("/history")) {
+      return { parent: "Dashboard", current: "History" };
+    }
+    if (path === "/") {
+      return { parent: "Dashboard", current: "Overview" };
+    }
+    return { parent: "Dashboard", current: "Page" }; // Fallback
   };
 
   const breadcrumb = getBreadcrumb();
-  const currentTime = new Date().toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -15,13 +14,21 @@ import {
   Hammer as Toolbox
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getQueryFn } from "@/lib/queryClient";
+
+// Define an interface for the stats for better type safety
+interface DashboardStats {
+  pendingRequests?: number;
+}
 
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
 
-  const { data: stats } = useQuery<any>({
+  // Securely fetch dashboard stats and handle authentication errors gracefully
+  const { data: stats } = useQuery<DashboardStats | null>({
     queryKey: ["/api/dashboard/stats"],
+    queryFn: getQueryFn({ on401: "returnNull" }), // This prevents crashes on auth errors
     retry: false,
   });
 
