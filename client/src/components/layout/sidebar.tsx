@@ -10,7 +10,6 @@ import {
   Home, 
   Calendar, 
   Settings, 
-  LogOut, 
   ClipboardList, 
   History,
   Hammer as Toolbox
@@ -21,7 +20,7 @@ export default function Sidebar() {
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
     retry: false,
   });
@@ -145,15 +144,6 @@ export default function Sidebar() {
           >
             <Settings className="h-5 w-5 mr-3" />
             <span>Settings</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            className="w-full justify-start h-auto py-2.5 px-3 text-red-400 hover:bg-red-500/20 hover:text-red-300"
-            onClick={() => window.location.href = "/api/logout"}
-          >
-            <LogOut className="h-5 w-5 mr-3" />
-            <span>Logout</span>
           </Button>
         </div>
       </nav>

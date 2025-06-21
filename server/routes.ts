@@ -1,28 +1,26 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertToolSchema, insertBookingSchema, updateBookingSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+  // Mock user endpoint for local development without Replit Auth
+  app.get('/api/auth/user', async (req: any, res) => {
+    res.json({
+      id: 'localuser',
+      email: 'user@example.com',
+      firstName: 'Local',
+      lastName: 'User',
+      profileImageUrl: '',
+      role: 'admin', // Can be 'admin' or 'user' for testing
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
   });
 
   // Dashboard stats
-  app.get("/api/dashboard/stats", isAuthenticated, async (req, res) => {
+  app.get("/api/dashboard/stats", async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -33,7 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tool routes
-  app.get("/api/tools", isAuthenticated, async (req, res) => {
+  app.get("/api/tools", async (req, res) => {
     try {
       const tools = await storage.getAllTools();
       res.json(tools);
@@ -43,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tools/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/tools/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const tool = await storage.getToolById(id);
@@ -57,16 +55,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tools", isAuthenticated, async (req: any, res) => {
+  app.post("/api/tools", async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
       const toolData = insertToolSchema.parse(req.body);
       
-      // Check if tool ID already exists
       const existingTool = await storage.getToolByToolId(toolData.toolId);
       if (existingTool) {
         return res.status(400).json({ message: "Tool ID already exists" });
@@ -83,23 +75,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/tools/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/tools/:id", async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
       const id = parseInt(req.params.id);
       const toolData = insertToolSchema.partial().parse(req.body);
       
-      // Check if tool exists
       const existingTool = await storage.getToolById(id);
       if (!existingTool) {
         return res.status(404).json({ message: "Tool not found" });
       }
 
-      // Check if new tool ID conflicts (if being updated)
       if (toolData.toolId && toolData.toolId !== existingTool.toolId) {
         const conflictingTool = await storage.getToolByToolId(toolData.toolId);
         if (conflictingTool) {
@@ -118,13 +103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tools/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/tools/:id", async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
       const id = parseInt(req.params.id);
       await storage.deleteTool(id);
       res.status(204).send();
@@ -135,17 +115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Booking routes
-  app.get("/api/bookings", isAuthenticated, async (req: any, res) => {
+  app.get("/api/bookings", async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      
-      let bookings;
-      if (user?.role === "admin") {
-        bookings = await storage.getAllBookings();
-      } else {
-        bookings = await storage.getBookingsByUserId(req.user.claims.sub);
-      }
-      
+      const bookings = await storage.getAllBookings();
       res.json(bookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -153,13 +125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/bookings/pending", isAuthenticated, async (req: any, res) => {
+  app.get("/api/bookings/pending", async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
       const bookings = await storage.getPendingBookings();
       res.json(bookings);
     } catch (error) {
@@ -168,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/bookings/calendar", isAuthenticated, async (req, res) => {
+  app.get("/api/bookings/calendar", async (req, res) => {
     try {
       const { start, end } = req.query;
       
@@ -187,14 +154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/bookings", isAuthenticated, async (req: any, res) => {
+  app.post("/api/bookings", async (req: any, res) => {
     try {
       const bookingData = insertBookingSchema.parse({
         ...req.body,
-        userId: req.user.claims.sub,
+        userId: 'localuser', // Use mock user ID
       });
 
-      // Check for conflicts
       const hasConflict = await storage.checkBookingConflict(
         bookingData.toolId,
         bookingData.startDate,
@@ -205,7 +171,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "Tool is already booked for this time period" });
       }
 
-      // Check if tool exists and is available
       const tool = await storage.getToolById(bookingData.toolId);
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
@@ -226,35 +191,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/bookings/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/bookings/:id", async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const user = await storage.getUser(req.user.claims.sub);
       const booking = await storage.getBookingById(id);
 
       if (!booking) {
         return res.status(404).json({ message: "Booking not found" });
       }
 
-      // Check permissions
-      if (user?.role !== "admin" && booking.userId !== req.user.claims.sub) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
       const updateData = updateBookingSchema.parse(req.body);
 
       // If admin is approving/denying
-      if (user?.role === "admin" && updateData.status) {
+      if (updateData.status) {
         if (updateData.status === "approved") {
-          updateData.approvedBy = req.user.claims.sub;
+          updateData.approvedBy = 'localuser'; // Use mock user ID
           updateData.approvedAt = new Date();
 
-          // Update tool status if approved
           await storage.updateTool(booking.toolId, { status: "in-use" });
         }
       }
 
-      // Check for conflicts if dates are being updated
       if (updateData.startDate || updateData.endDate || updateData.toolId) {
         const startDate = updateData.startDate || booking.startDate;
         const endDate = updateData.endDate || booking.endDate;
@@ -283,21 +240,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/bookings/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/bookings/:id", async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const user = await storage.getUser(req.user.claims.sub);
-      const booking = await storage.getBookingById(id);
-
-      if (!booking) {
-        return res.status(404).json({ message: "Booking not found" });
-      }
-
-      // Check permissions
-      if (user?.role !== "admin" && booking.userId !== req.user.claims.sub) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
       await storage.deleteBooking(id);
       res.status(204).send();
     } catch (error) {
@@ -307,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check tool availability
-  app.post("/api/tools/:id/check-availability", isAuthenticated, async (req, res) => {
+  app.post("/api/tools/:id/check-availability", async (req, res) => {
     try {
       const toolId = parseInt(req.params.id);
       const { startDate, endDate, excludeBookingId } = req.body;

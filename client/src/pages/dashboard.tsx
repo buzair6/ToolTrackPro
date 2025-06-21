@@ -1,8 +1,5 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/layout/sidebar";
 import TopBar from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,40 +9,18 @@ import { Wrench, CheckCircle, Clock, CalendarX, Plus, ClipboardCheck, Calendar, 
 import { useLocation } from "wouter";
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
-    enabled: isAuthenticated,
     retry: false,
   });
 
-  const { data: recentBookings, isLoading: bookingsLoading } = useQuery({
+  const { data: recentBookings, isLoading: bookingsLoading } = useQuery<any[]>({
     queryKey: ["/api/bookings"],
-    enabled: isAuthenticated,
     retry: false,
   });
-
-  if (isLoading || !isAuthenticated) {
-    return <div className="min-h-screen bg-gray-50 dark:bg-gray-900" />;
-  }
 
   const recentRequests = recentBookings?.slice(0, 3) || [];
 
