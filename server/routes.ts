@@ -260,9 +260,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/bookings", async (req: any, res) => {
     try {
+      const sessionId = req.cookies?.session;
+      if (!sessionId) return res.status(401).json({ message: "Not authenticated" });
+      const userId = getSessionUser(sessionId);
+      if (!userId) return res.status(401).json({ message: "Session expired" });
+
       const bookingData = insertBookingSchema.parse({
         ...req.body,
-        userId: 'localuser', // Use mock user ID
+        userId: userId,
       });
 
       const hasConflict = await storage.checkBookingConflict(
@@ -297,6 +302,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/bookings/:id", async (req: any, res) => {
     try {
+      const sessionId = req.cookies?.session;
+      if (!sessionId) return res.status(401).json({ message: "Not authenticated" });
+      const adminId = getSessionUser(sessionId);
+      if (!adminId) return res.status(401).json({ message: "Session expired" });
+      
       const id = parseInt(req.params.id);
       const booking = await storage.getBookingById(id);
 
@@ -308,8 +318,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If admin is approving/denying
       if (updateData.status) {
+        const adminUser = await storage.getUser(adminId);
+        if (!adminUser || adminUser.role !== 'admin') {
+            return res.status(403).json({ message: "Forbidden: Not an admin" });
+        }
+        
         if (updateData.status === "approved") {
-          updateData.approvedBy = 'localuser'; // Use mock user ID
+          updateData.approvedBy = adminId;
           updateData.approvedAt = new Date();
 
           await storage.updateTool(booking.toolId, { status: "in-use" });

@@ -1,6 +1,6 @@
 // <reference types="wouter/switch" />
 
-import { Route, Redirect, Switch } from "wouter"; // Corrected: Switch imported directly from "wouter"
+import { Route, Redirect, Switch } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
-import ErrorBoundary from "@/components/error-boundary"; // Assuming you've created this file as per previous instructions
+import ErrorBoundary from "@/components/error-boundary";
 
 // Import page components
 import NotFound from "@/pages/not-found";
@@ -27,9 +27,9 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 lg:ml-64">
         <TopBar />
-        <div className="p-6">{children}</div>
+        <main className="p-6">{children}</main>
       </div>
     </div>
   );
@@ -65,24 +65,16 @@ function App() {
 
   // If authenticated, show the main application layout and routes.
   return (
-    <Switch>
-      <Route path="/">
-        <MainLayout><Dashboard /></MainLayout>
-      </Route>
-      <Route path="/calendar">
-        <MainLayout><Calendar /></MainLayout>
-      </Route>
-      <Route path="/tools">
-        <MainLayout><Tools /></MainLayout>
-      </Route>
-      <Route path="/requests">
-        <MainLayout><Requests /></MainLayout>
-      </Route>
-      <Route path="/history">
-        <MainLayout><History /></MainLayout>
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
+    <MainLayout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/calendar" component={Calendar} />
+        <Route path="/tools" component={Tools} />
+        <Route path="/requests" component={Requests} />
+        <Route path="/history" component={History} />
+        <Route component={NotFound} />
+      </Switch>
+    </MainLayout>
   );
 }
 
