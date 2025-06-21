@@ -12,7 +12,7 @@ import {
   type BookingWithRelations,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, or, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, or, desc, asc, lt, gt, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -198,8 +198,14 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(tools, eq(bookings.toolId, tools.id))
       .where(
         and(
-          gte(bookings.startDate, startDate),
-          lte(bookings.endDate, endDate)
+          // Correct logic for overlapping intervals
+          lte(bookings.startDate, endDate),
+          gte(bookings.endDate, startDate),
+          // Only show relevant bookings on the calendar
+          or(
+            eq(bookings.status, "approved"),
+            eq(bookings.status, "pending")
+          )
         )
       )
       .orderBy(asc(bookings.startDate))
@@ -231,31 +237,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkBookingConflict(toolId: number, startDate: Date, endDate: Date, excludeBookingId?: number): Promise<boolean> {
-    const query = db
-      .select()
-      .from(bookings)
-      .where(
-        and(
-          eq(bookings.toolId, toolId),
-          or(
+    const conditions = [
+        eq(bookings.toolId, toolId),
+        or(
             eq(bookings.status, "approved"),
             eq(bookings.status, "pending")
-          ),
-          or(
-            and(gte(bookings.startDate, startDate), lte(bookings.startDate, endDate)),
-            and(gte(bookings.endDate, startDate), lte(bookings.endDate, endDate)),
-            and(lte(bookings.startDate, startDate), gte(bookings.endDate, endDate))
-          )
-        )
-      );
+        ),
+        // Overlap condition: (StartA < EndB) and (EndA > StartB)
+        lt(bookings.startDate, endDate),
+        gt(bookings.endDate, startDate)
+    ];
 
     if (excludeBookingId) {
-      const results = await query;
-      return results.some(booking => booking.id !== excludeBookingId);
+        conditions.push(ne(bookings.id, excludeBookingId));
     }
 
-    const results = await query;
-    return results.length > 0;
+    const conflictingBookings = await db
+      .select({ id: bookings.id })
+      .from(bookings)
+      .where(and(...conditions));
+
+    return conflictingBookings.length > 0;
   }
 
   async getDashboardStats(): Promise<{

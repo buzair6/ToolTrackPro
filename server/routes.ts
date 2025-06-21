@@ -45,8 +45,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = loginSchema.parse(req.body);
       
-      // For demo purposes, accept any email/password combination
-      // In real app, you'd verify against stored credentials
       const user = await storage.upsertUser({
         id: `user_${email.replace('@', '_').replace('.', '_')}`,
         email,
@@ -59,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionId = createSession(user.id);
       res.cookie('session', sessionId, { 
         httpOnly: true, 
-        secure: false, // Set to true in production with HTTPS
+        secure: false, 
         maxAge: 24 * 60 * 60 * 1000 
       });
       
@@ -284,12 +282,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
       }
-
+      
       if (tool.status !== "available") {
         return res.status(400).json({ message: "Tool is not available for booking" });
       }
 
       const booking = await storage.createBooking(bookingData);
+      
       res.status(201).json(booking);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -366,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting booking:", error);
-      res.status(500).json({ message: "Failed to delete booking" });
+      res.status(500).json({ message: "Failed to delete tool" });
     }
   });
 

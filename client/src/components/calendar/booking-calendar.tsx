@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BookingModal from "@/components/modals/booking-modal";
 import { ChevronLeft, ChevronRight, Plus, Calendar, Clock } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, isSameWeek, startOfDay, addHours } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay } from "date-fns";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import type { BookingWithRelations, Tool } from "@shared/schema";
 
 export default function BookingCalendar() {
   const { user } = useAuth();
@@ -19,7 +21,6 @@ export default function BookingCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | undefined>();
 
-  // Get calendar date range based on view mode
   const getDateRange = () => {
     if (viewMode === "week") {
       const weekStart = startOfWeek(currentDate);
@@ -29,7 +30,6 @@ export default function BookingCalendar() {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       
-      // Extend to show full weeks
       const calendarStart = new Date(monthStart);
       calendarStart.setDate(calendarStart.getDate() - getDay(monthStart));
       
@@ -42,12 +42,12 @@ export default function BookingCalendar() {
 
   const { start: calendarStart, end: calendarEnd } = getDateRange();
 
-  const { data: tools } = useQuery({
+  const { data: tools } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
     retry: false,
   });
 
-  const { data: bookings } = useQuery({
+  const { data: bookings } = useQuery<BookingWithRelations[]>({
     queryKey: ["/api/bookings/calendar", format(calendarStart, "yyyy-MM-dd"), format(calendarEnd, "yyyy-MM-dd")],
     queryFn: async () => {
       const response = await fetch(
@@ -60,28 +60,24 @@ export default function BookingCalendar() {
     retry: false,
   });
 
-  // Generate calendar days
   const calendarDays = eachDayOfInterval({
     start: calendarStart,
     end: calendarEnd,
   });
 
-  // Filter bookings for selected tool
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
     
-    return bookings.filter((booking: any) => {
+    return bookings.filter((booking: BookingWithRelations) => {
       if (selectedTool === "all") return true;
       return booking.tool?.id?.toString() === selectedTool;
     });
   }, [bookings, selectedTool]);
 
-  // Get bookings for a specific day
   const getBookingsForDay = (day: Date) => {
-    return filteredBookings.filter((booking: any) => {
-      const bookingStart = new Date(booking.startDate);
-      const bookingEnd = new Date(booking.endDate);
-      
+    return filteredBookings.filter((booking: BookingWithRelations) => {
+      const bookingStart = startOfDay(new Date(booking.startDate));
+      const bookingEnd = startOfDay(new Date(booking.endDate));
       return day >= bookingStart && day <= bookingEnd;
     });
   };
@@ -103,7 +99,6 @@ export default function BookingCalendar() {
     return isSameDay(day, new Date());
   };
 
-  // Generate hourly time slots for weekly view
   const timeSlots = Array.from({ length: 12 }, (_, i) => {
     const hour = i + 8; // Start from 8 AM
     return {
@@ -112,7 +107,6 @@ export default function BookingCalendar() {
     };
   });
 
-  // Get bookings for a specific time slot
   const getBookingsForTimeSlot = (day: Date, timeSlot: string) => {
     const [hour] = timeSlot.split(':').map(Number);
     const slotStart = new Date(day);
@@ -120,11 +114,10 @@ export default function BookingCalendar() {
     const slotEnd = new Date(slotStart);
     slotEnd.setHours(hour + 1, 0, 0, 0);
 
-    return filteredBookings.filter((booking: any) => {
+    return filteredBookings.filter((booking: BookingWithRelations) => {
       const bookingStart = new Date(booking.startDate);
       const bookingEnd = new Date(booking.endDate);
-      
-      return (bookingStart <= slotEnd && bookingEnd >= slotStart);
+      return (bookingStart < slotEnd && bookingEnd > slotStart);
     });
   };
 
@@ -157,18 +150,16 @@ export default function BookingCalendar() {
 
   const renderMonthView = () => (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      {/* Calendar Header */}
       <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day: string) => (
           <div key={day} className="p-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0">
             {day}
           </div>
         ))}
       </div>
       
-      {/* Calendar Grid */}
       <div className="grid grid-cols-7">
-        {calendarDays.map((day, index) => {
+        {calendarDays.map((day: Date, index: number) => {
           const dayBookings = getBookingsForDay(day);
           const isCurrentMonthDay = isCurrentMonth(day);
           const isTodayDay = isToday(day);
@@ -200,17 +191,23 @@ export default function BookingCalendar() {
               )}
               
               <div className="mt-1 space-y-1">
-                {dayBookings.slice(0, 3).map((booking: any) => (
-                  <div
-                    key={booking.id}
-                    className={`text-xs px-1 py-0.5 rounded truncate ${getStatusColor(booking.status)}`}
-                    title={`${booking.tool?.name} - ${booking.user?.firstName} ${booking.user?.lastName} (${booking.status})`}
-                  >
-                    {selectedTool === "all" 
-                      ? `${booking.tool?.name?.split(' ')[0] || 'Tool'} - ${booking.duration}h`
-                      : `${booking.duration}h - ${booking.user?.firstName || 'User'}`
-                    }
-                  </div>
+                {dayBookings.slice(0, 3).map((booking: BookingWithRelations) => (
+                   <HoverCard key={booking.id}>
+                    <HoverCardTrigger asChild>
+                      <div className={`text-xs px-1 py-0.5 rounded truncate ${getStatusColor(booking.status)}`}>
+                        {selectedTool === "all" 
+                          ? `${booking.tool?.name?.split(' ')[0] || 'Tool'} - ${booking.duration}h`
+                          : `${booking.duration}h - ${booking.user?.firstName || 'User'}`
+                        }
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-80">
+                      <p className="font-bold">{booking.tool.name}</p>
+                      <p>Booked by: {booking.user.firstName} {booking.user.lastName}</p>
+                      <p>Purpose: {booking.purpose || 'N/A'}</p>
+                      <p>Status: <span className="capitalize">{booking.status}</span></p>
+                    </HoverCardContent>
+                  </HoverCard>
                 ))}
                 {dayBookings.length > 3 && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -230,12 +227,11 @@ export default function BookingCalendar() {
     
     return (
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        {/* Week Header */}
         <div className="grid grid-cols-8 bg-gray-50 dark:bg-gray-800">
           <div className="p-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             Time
           </div>
-          {weekDays.map((day) => (
+          {weekDays.map((day: Date) => (
             <div key={day.toISOString()} className="p-3 text-center border-r border-gray-200 dark:border-gray-700 last:border-r-0">
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {format(day, "EEE")}
@@ -249,32 +245,38 @@ export default function BookingCalendar() {
           ))}
         </div>
         
-        {/* Time Slots Grid */}
-        {timeSlots.map((slot) => (
+        {timeSlots.map((slot: { time: string; label: string }) => (
           <div key={slot.time} className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
             <div className="p-3 text-sm text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               {slot.label}
             </div>
-            {weekDays.map((day) => {
+            {weekDays.map((day: Date) => {
               const slotBookings = getBookingsForTimeSlot(day, slot.time);
               
               return (
                 <div
                   key={`${day.toISOString()}-${slot.time}`}
                   className="p-2 min-h-16 border-r border-gray-200 dark:border-gray-700 last:border-r-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                  onClick={() => handleDayClick(day, slot.time)}
+                  onClick={() => slotBookings.length === 0 && handleDayClick(day, slot.time)}
                 >
-                  {slotBookings.map((booking: any) => (
-                    <div
-                      key={booking.id}
-                      className={`text-xs px-2 py-1 rounded mb-1 truncate ${getStatusColor(booking.status)}`}
-                      title={`${booking.tool?.name} - ${booking.user?.firstName} ${booking.user?.lastName} (${booking.status})`}
-                    >
-                      {selectedTool === "all" 
-                        ? booking.tool?.name?.split(' ')[0] || 'Tool'
-                        : booking.user?.firstName || 'User'
-                      }
-                    </div>
+                  {slotBookings.map((booking: BookingWithRelations) => (
+                     <HoverCard key={booking.id}>
+                        <HoverCardTrigger asChild>
+                          <div className={`text-xs px-2 py-1 rounded mb-1 truncate ${getStatusColor(booking.status)}`}>
+                            {selectedTool === "all" 
+                              ? booking.tool?.name?.split(' ')[0] || 'Tool'
+                              : booking.user?.firstName || 'User'
+                            }
+                          </div>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80">
+                          <p className="font-bold">{booking.tool.name}</p>
+                          <p>Booked by: {booking.user.firstName} {booking.user.lastName}</p>
+                           <p>Duration: {booking.duration} hours</p>
+                           <p>Purpose: {booking.purpose || 'N/A'}</p>
+                           <p>Status: <span className="capitalize">{booking.status}</span></p>
+                        </HoverCardContent>
+                      </HoverCard>
                   ))}
                 </div>
               );
@@ -334,7 +336,7 @@ export default function BookingCalendar() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Tools</SelectItem>
-                {tools?.map((tool: any) => (
+                {tools?.map((tool: Tool) => (
                   <SelectItem key={tool.id} value={tool.id.toString()}>
                     {tool.name}
                   </SelectItem>
@@ -353,7 +355,6 @@ export default function BookingCalendar() {
       <CardContent>
         {viewMode === "month" ? renderMonthView() : renderWeekView()}
 
-        {/* Legend */}
         <div className="mt-4 flex items-center space-x-6 text-sm">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>

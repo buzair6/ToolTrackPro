@@ -99,7 +99,11 @@ export const insertToolSchema = createInsertSchema(tools).omit({
   updatedAt: true,
 });
 
-export const insertBookingSchema = createInsertSchema(bookings).omit({
+export const insertBookingSchema = createInsertSchema(bookings, {
+  // Use z.coerce.date() to handle string-to-Date conversion
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -109,7 +113,11 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   duration: z.number().min(2, "Minimum booking duration is 2 hours"),
 });
 
-export const updateBookingSchema = createInsertSchema(bookings).partial().omit({
+export const updateBookingSchema = createInsertSchema(bookings, {
+    // Use z.coerce.date() to handle string-to-Date conversion
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date(),
+}).partial().omit({
   id: true,
   createdAt: true,
   updatedAt: true,
