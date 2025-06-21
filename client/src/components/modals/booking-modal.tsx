@@ -17,15 +17,16 @@ interface BookingModalProps {
   onClose: () => void;
   selectedDate?: Date;
   selectedToolId?: number;
+  selectedTimeSlot?: string;
 }
 
-export default function BookingModal({ isOpen, onClose, selectedDate, selectedToolId }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, selectedDate, selectedToolId, selectedTimeSlot }: BookingModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     toolId: selectedToolId || "",
     startDate: selectedDate ? selectedDate.toISOString().split('T')[0] : "",
-    startTime: "09:00",
+    startTime: selectedTimeSlot || "09:00",
     duration: "",
     purpose: "",
   });
