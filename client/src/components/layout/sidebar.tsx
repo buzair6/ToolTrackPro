@@ -81,30 +81,30 @@ export default function Sidebar() {
   );
 
   return (
-    <div className="w-64 bg-white dark:bg-gray-800 shadow-lg border-r border-gray-200 dark:border-gray-700 fixed h-full z-30">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="w-64 bg-sidebar-background shadow-lg border-r border-sidebar-border fixed h-full z-30">
+      <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Wrench className="h-5 w-5 text-primary-foreground" />
+          <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Wrench className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-xl font-medium text-gray-900 dark:text-white">ToolBooker</h1>
+          <h1 className="text-xl font-medium text-sidebar-foreground">ToolBooker Pro</h1>
         </div>
       </div>
       
       <nav className="p-4 space-y-2">
         <div className="mb-4">
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="flex items-center space-x-3 p-3 bg-sidebar-accent rounded-lg">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.profileImageUrl} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+              <AvatarFallback className="bg-gradient-to-br from-green-600 to-blue-600 text-white text-sm">
                 {getUserInitials(user?.firstName, user?.lastName)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+              <p className="text-xs text-sidebar-foreground/70 capitalize">
                 {user?.role === "admin" ? "Administrator" : "User"}
               </p>
             </div>
@@ -122,8 +122,8 @@ export default function Sidebar() {
               className={cn(
                 "w-full justify-start h-auto py-2.5 px-3",
                 active 
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" 
+                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}
               onClick={() => setLocation(item.path)}
             >
@@ -138,10 +138,10 @@ export default function Sidebar() {
           );
         })}
 
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-2">
+        <div className="border-t border-sidebar-border pt-4 mt-4 space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start h-auto py-2.5 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="w-full justify-start h-auto py-2.5 px-3 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <Settings className="h-5 w-5 mr-3" />
             <span>Settings</span>
@@ -149,7 +149,7 @@ export default function Sidebar() {
           
           <Button
             variant="ghost"
-            className="w-full justify-start h-auto py-2.5 px-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="w-full justify-start h-auto py-2.5 px-3 text-red-400 hover:bg-red-500/20 hover:text-red-300"
             onClick={() => window.location.href = "/api/logout"}
           >
             <LogOut className="h-5 w-5 mr-3" />

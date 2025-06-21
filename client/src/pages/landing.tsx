@@ -4,79 +4,89 @@ import { Wrench, Calendar, Shield, Clock } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-green-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-green-900/20">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-              <Wrench className="h-6 w-6 text-primary-foreground" />
+            <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Wrench className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white ml-3">ToolBooker</h1>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-700 to-blue-700 bg-clip-text text-transparent ml-4">ToolBooker Pro</h1>
           </div>
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
             Professional tool booking management system with administrative approval workflows and calendar-based availability tracking
           </p>
-          <Button 
-            size="lg" 
-            onClick={() => window.location.href = "/api/login"}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            Sign In to Get Started
-          </Button>
+          <div className="flex gap-4 justify-center">
+            <Button 
+              size="lg" 
+              onClick={() => window.location.href = "/api/login"}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg transform hover:scale-105 transition-all duration-200"
+            >
+              Sign In to Continue
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => window.location.href = "/api/login"}
+              className="border-2 border-green-600 text-green-700 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-900/20"
+            >
+              Create Account
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 hover:shadow-xl transition-all duration-300">
             <CardHeader className="text-center">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Wrench className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Wrench className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-lg">Tool Management</CardTitle>
+              <CardTitle className="text-lg text-gray-800 dark:text-white">Tool Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-gray-600 dark:text-gray-300">
                 Comprehensive inventory management with real-time availability tracking
               </CardDescription>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 hover:shadow-xl transition-all duration-300">
             <CardHeader className="text-center">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Calendar className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Calendar className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-lg">Smart Booking</CardTitle>
+              <CardTitle className="text-lg text-gray-800 dark:text-white">Smart Booking</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-gray-600 dark:text-gray-300">
                 Calendar-based booking system with conflict detection and approval workflows
               </CardDescription>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 hover:shadow-xl transition-all duration-300">
             <CardHeader className="text-center">
-              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              <div className="w-14 h-14 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Shield className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-lg">Admin Control</CardTitle>
+              <CardTitle className="text-lg text-gray-800 dark:text-white">Admin Control</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-gray-600 dark:text-gray-300">
                 Role-based access with administrative approval and cost tracking
               </CardDescription>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 hover:shadow-xl transition-all duration-300">
             <CardHeader className="text-center">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Clock className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-lg">Usage Analytics</CardTitle>
+              <CardTitle className="text-lg text-gray-800 dark:text-white">Usage Analytics</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-gray-600 dark:text-gray-300">
                 Detailed booking history and usage reports with cost analysis
               </CardDescription>
             </CardContent>

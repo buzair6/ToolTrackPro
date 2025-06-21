@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Bell } from "lucide-react";
 
 export default function TopBar() {
@@ -52,6 +53,8 @@ export default function TopBar() {
             <Bell className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
           </Button>
+          
+          <ThemeToggle />
           
           <div className="flex items-center space-x-2 text-sm">
             <span className="text-gray-700 dark:text-gray-300">{currentTime}</span>
