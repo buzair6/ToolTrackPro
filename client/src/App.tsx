@@ -17,7 +17,7 @@ import Calendar from "@/pages/calendar";
 import Tools from "@/pages/tools";
 import Requests from "@/pages/requests";
 import History from "@/pages/history";
-import Landing from "@/pages/landing";
+import Auth from "@/pages/auth";
 
 // Import layout components
 import Sidebar from "@/components/layout/sidebar";
@@ -50,12 +50,12 @@ function App() {
     );
   }
 
-  // If the user is not authenticated, show the landing page.
+  // If the user is not authenticated, show the auth page.
   if (!isAuthenticated) {
     return (
       <Switch>
-        <Route path="/" component={Landing} />
-        {/* Redirect any other path to the landing page if not authenticated */}
+        <Route path="/" component={Auth} />
+        {/* Redirect any other path to the auth page if not authenticated */}
         <Route>
           <Redirect to="/" />
         </Route>

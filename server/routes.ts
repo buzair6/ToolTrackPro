@@ -4,19 +4,123 @@ import { storage } from "./storage";
 import { insertToolSchema, insertBookingSchema, updateBookingSchema } from "@shared/schema";
 import { z } from "zod";
 
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+const registerSchema = z.object({
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+// Simple session store for demo purposes
+const sessions = new Map<string, { userId: string; expires: Date }>();
+
+function generateSessionId(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+function createSession(userId: string): string {
+  const sessionId = generateSessionId();
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  sessions.set(sessionId, { userId, expires });
+  return sessionId;
+}
+
+function getSessionUser(sessionId: string): string | null {
+  const session = sessions.get(sessionId);
+  if (!session || session.expires < new Date()) {
+    if (session) sessions.delete(sessionId);
+    return null;
+  }
+  return session.userId;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Mock user endpoint for local development without Replit Auth
-  app.get('/api/auth/user', async (req: any, res) => {
-    res.json({
-      id: 'localuser',
-      email: 'user@example.com',
-      firstName: 'Local',
-      lastName: 'User',
-      profileImageUrl: '',
-      role: 'admin', // Can be 'admin' or 'user' for testing
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+  // Authentication endpoints
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = loginSchema.parse(req.body);
+      
+      // For demo purposes, accept any email/password combination
+      // In real app, you'd verify against stored credentials
+      const user = await storage.upsertUser({
+        id: `user_${email.replace('@', '_').replace('.', '_')}`,
+        email,
+        firstName: email.split('@')[0],
+        lastName: 'User',
+        profileImageUrl: '',
+        role: email.includes('admin') ? 'admin' : 'user',
+      });
+
+      const sessionId = createSession(user.id);
+      res.cookie('session', sessionId, { 
+        httpOnly: true, 
+        secure: false, // Set to true in production with HTTPS
+        maxAge: 24 * 60 * 60 * 1000 
+      });
+      
+      res.json({ user });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(400).json({ message: "Invalid credentials" });
+    }
+  });
+
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const { firstName, lastName, email, password } = registerSchema.parse(req.body);
+      
+      const user = await storage.upsertUser({
+        id: `user_${email.replace('@', '_').replace('.', '_')}`,
+        email,
+        firstName,
+        lastName,
+        profileImageUrl: '',
+        role: 'user',
+      });
+
+      res.json({ user, message: "Account created successfully" });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(400).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post('/api/auth/logout', async (req, res) => {
+    const sessionId = req.cookies?.session;
+    if (sessionId) {
+      sessions.delete(sessionId);
+      res.clearCookie('session');
+    }
+    res.json({ message: "Logged out successfully" });
+  });
+
+  app.get('/api/auth/user', async (req, res) => {
+    try {
+      const sessionId = req.cookies?.session;
+      if (!sessionId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userId = getSessionUser(sessionId);
+      if (!userId) {
+        return res.status(401).json({ message: "Session expired" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Auth check error:", error);
+      res.status(401).json({ message: "Authentication failed" });
+    }
   });
 
   // Dashboard stats
