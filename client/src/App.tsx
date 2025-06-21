@@ -1,6 +1,6 @@
 // <reference types="wouter/switch" />
 
-import { Route, Redirect, Switch } from "wouter"; // Corrected: Switch imported directly from "wouter"
+import { Route, Redirect, Switch } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
-import ErrorBoundary from "@/components/error-boundary"; // Assuming you've created this file as per previous instructions
+import ErrorBoundary from "@/components/error-boundary";
 
 // Import page components
 import NotFound from "@/pages/not-found";
@@ -17,7 +17,8 @@ import Calendar from "@/pages/calendar";
 import Tools from "@/pages/tools";
 import Requests from "@/pages/requests";
 import History from "@/pages/history";
-import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 
 // Import layout components
 import Sidebar from "@/components/layout/sidebar";
@@ -50,20 +51,21 @@ function App() {
     );
   }
 
-  // If the user is not authenticated, show the landing page.
+  // --- Unauthenticated Users ---
   if (!isAuthenticated) {
     return (
       <Switch>
-        <Route path="/" component={Landing} />
-        {/* Redirect any other path to the landing page if not authenticated */}
+        <Route path="/login" component={Login} />
+        <Route path="/signup" component={Signup} />
+        {/* For any other route, redirect to login */}
         <Route>
-          <Redirect to="/" />
+          <Redirect to="/login" />
         </Route>
       </Switch>
     );
   }
 
-  // If authenticated, show the main application layout and routes.
+  // --- Authenticated Users ---
   return (
     <Switch>
       <Route path="/">
@@ -81,6 +83,13 @@ function App() {
       <Route path="/history">
         <MainLayout><History /></MainLayout>
       </Route>
+      {/* If an authenticated user tries to go to login/signup, redirect them to dashboard */}
+      <Route path="/login">
+        <Redirect to="/" />
+      </Route>
+      <Route path="/signup">
+        <Redirect to="/" />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -92,7 +101,6 @@ export default function AppWrapper() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          {/* Wrap the main App component with the ErrorBoundary */}
           <ErrorBoundary>
             <App />
           </ErrorBoundary>
