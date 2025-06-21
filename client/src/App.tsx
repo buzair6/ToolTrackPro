@@ -1,31 +1,31 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/useAuth";
+
+// Import page components
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Calendar from "@/pages/calendar";
 import Tools from "@/pages/tools";
 import Requests from "@/pages/requests";
 import History from "@/pages/history";
+import Landing from "@/pages/landing"; // Import the Landing page
+
+// Import layout components
 import Sidebar from "@/components/layout/sidebar";
 import TopBar from "@/components/layout/topbar";
 
-/**
- * MainLayout component wraps all authenticated pages, providing the sidebar and top bar.
- */
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <div className="flex-1 ml-64">
         <TopBar />
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -34,12 +34,24 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Show a loading screen while the initial user fetch is in progress
   if (isLoading) {
     return <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900" />;
   }
 
-  // Once loading is complete, render the application routes
+  // If the user is not authenticated, show the landing page.
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        {/* Redirect any other path to the landing page if not authenticated */}
+        <Route>
+          <Redirect to="/" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  // If authenticated, show the main application layout and routes.
   return (
     <Switch>
       <Route path="/">
@@ -57,7 +69,6 @@ function App() {
       <Route path="/history">
         <MainLayout><History /></MainLayout>
       </Route>
-      {/* Fallback for any other route */}
       <Route component={NotFound} />
     </Switch>
   );
