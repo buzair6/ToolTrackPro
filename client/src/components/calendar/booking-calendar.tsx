@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -297,8 +297,8 @@ export default function BookingCalendar() {
           <div className="flex items-center space-x-4">
             <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
               {viewMode === "week" 
-                ? `Week of ${format(calendarStart, "MMM dd,HDROff")}`
-                : format(currentDate, "MMMM Yfine")
+                ? `Week of ${format(calendarStart, "MMM dd, yyyy")}`
+                : format(currentDate, "MMMM yyyy")
               }
             </CardTitle>
             <div className="flex items-center space-x-2">
