@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,21 @@ export default function BookingCalendar() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
-  const [selectedTool, setSelectedTool] = useState("all");
+  const [selectedTool, setSelectedTool] = useState<string>();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | undefined>();
+
+  const { data: tools } = useQuery<Tool[]>({
+    queryKey: ["/api/tools"],
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (tools && tools.length > 0 && !selectedTool) {
+      setSelectedTool(tools[0].id.toString());
+    }
+  }, [tools, selectedTool]);
 
   const getDateRange = () => {
     if (viewMode === "week") {
@@ -42,11 +53,6 @@ export default function BookingCalendar() {
 
   const { start: calendarStart, end: calendarEnd } = getDateRange();
 
-  const { data: tools } = useQuery<Tool[]>({
-    queryKey: ["/api/tools"],
-    retry: false,
-  });
-
   const { data: bookings } = useQuery<BookingWithRelations[]>({
     queryKey: ["/api/bookings/calendar", format(calendarStart, "yyyy-MM-dd"), format(calendarEnd, "yyyy-MM-dd")],
     queryFn: async () => {
@@ -66,10 +72,9 @@ export default function BookingCalendar() {
   });
 
   const filteredBookings = useMemo(() => {
-    if (!bookings) return [];
+    if (!bookings || !selectedTool) return [];
     
     return bookings.filter((booking: BookingWithRelations) => {
-      if (selectedTool === "all") return true;
       return booking.tool?.id?.toString() === selectedTool;
     });
   }, [bookings, selectedTool]);
@@ -119,6 +124,10 @@ export default function BookingCalendar() {
       const bookingEnd = new Date(booking.endDate);
       return (bookingStart < slotEnd && bookingEnd > slotStart);
     });
+  };
+
+  const getUserInitials = (firstName?: string, lastName?: string) => {
+    return `${firstName?.[0] || 'U'}${lastName?.[0] || ''}`;
   };
 
   const handleDayClick = (day: Date, timeSlot?: string) => {
@@ -195,10 +204,7 @@ export default function BookingCalendar() {
                    <HoverCard key={booking.id}>
                     <HoverCardTrigger asChild>
                       <div className={`text-xs px-1 py-0.5 rounded truncate ${getStatusColor(booking.status)}`}>
-                        {selectedTool === "all" 
-                          ? `${booking.tool?.name?.split(' ')[0] || 'Tool'} - ${booking.duration}h`
-                          : `${booking.duration}h - ${booking.user?.firstName || 'User'}`
-                        }
+                        {getUserInitials(booking.user?.firstName, booking.user?.lastName)} - {booking.duration}h
                       </div>
                     </HoverCardTrigger>
                     <HoverCardContent className="w-80">
@@ -263,10 +269,7 @@ export default function BookingCalendar() {
                      <HoverCard key={booking.id}>
                         <HoverCardTrigger asChild>
                           <div className={`text-xs px-2 py-1 rounded mb-1 truncate ${getStatusColor(booking.status)}`}>
-                            {selectedTool === "all" 
-                              ? booking.tool?.name?.split(' ')[0] || 'Tool'
-                              : booking.user?.firstName || 'User'
-                            }
+                            {getUserInitials(booking.user?.firstName, booking.user?.lastName)} - {booking.duration}h
                           </div>
                         </HoverCardTrigger>
                         <HoverCardContent className="w-80">
@@ -294,8 +297,8 @@ export default function BookingCalendar() {
           <div className="flex items-center space-x-4">
             <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
               {viewMode === "week" 
-                ? `Week of ${format(calendarStart, "MMM dd, yyyy")}`
-                : format(currentDate, "MMMM yyyy")
+                ? `Week of ${format(calendarStart, "MMM dd,HDROff")}`
+                : format(currentDate, "MMMM Yfine")
               }
             </CardTitle>
             <div className="flex items-center space-x-2">
@@ -330,12 +333,11 @@ export default function BookingCalendar() {
               </TabsList>
             </Tabs>
             
-            <Select value={selectedTool} onValueChange={setSelectedTool}>
+            <Select value={selectedTool || ''} onValueChange={setSelectedTool}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Tools" />
+                <SelectValue placeholder="Select a tool..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Tools</SelectItem>
                 {tools?.map((tool: Tool) => (
                   <SelectItem key={tool.id} value={tool.id.toString()}>
                     {tool.name}
@@ -386,6 +388,7 @@ export default function BookingCalendar() {
           }}
           selectedDate={selectedDate}
           selectedTimeSlot={selectedTimeSlot}
+          selectedToolId={selectedTool ? parseInt(selectedTool, 10) : undefined}
         />
       )}
     </Card>

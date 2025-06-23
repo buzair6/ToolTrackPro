@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
+import type { Tool } from "@shared/schema";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
     purpose: "",
   });
 
-  const { data: tools } = useQuery({
+  const { data: tools } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
     retry: false,
   });
@@ -51,6 +52,7 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/calendar"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Success",
@@ -89,6 +91,12 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
       });
     },
   });
+  
+  useEffect(() => {
+    if (selectedToolId) {
+        setFormData(prev => ({...prev, toolId: selectedToolId.toString()}));
+    }
+  }, [selectedToolId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +122,7 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
     createBookingMutation.mutate(formData);
   };
 
-  const availableTools = tools?.filter((tool: any) => tool.status === "available") || [];
+  const availableTools = Array.isArray(tools) ? tools.filter((tool) => tool.status === "available") : [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
