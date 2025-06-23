@@ -24,9 +24,9 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
   const { toast } = useToast();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    toolId: selectedToolId || "",
-    startDate: selectedDate ? selectedDate.toISOString().split('T')[0] : "",
-    startTime: selectedTimeSlot || "09:00",
+    toolId: "",
+    startDate: "",
+    startTime: "09:00",
     duration: "",
     purpose: "",
   });
@@ -36,16 +36,30 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
     retry: false,
   });
 
+  // Reset form state when the modal opens or its initial props change
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        toolId: selectedToolId?.toString() || "",
+        startDate: selectedDate ? selectedDate.toISOString().split('T')[0] : "",
+        startTime: selectedTimeSlot || "09:00",
+        duration: "",
+        purpose: "",
+      });
+    }
+  }, [isOpen, selectedDate, selectedToolId, selectedTimeSlot]);
+
+
   const createBookingMutation = useMutation({
     mutationFn: async (bookingData: any) => {
       const startDateTime = new Date(`${bookingData.startDate}T${bookingData.startTime}`);
       const endDateTime = new Date(startDateTime.getTime() + bookingData.duration * 60 * 60 * 1000);
 
       await apiRequest("POST", "/api/bookings", {
-        toolId: parseInt(bookingData.toolId),
+        toolId: parseInt(bookingData.toolId, 10),
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
-        duration: parseInt(bookingData.duration),
+        duration: parseInt(bookingData.duration, 10),
         purpose: bookingData.purpose,
       });
     },
@@ -58,13 +72,6 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
         description: "Booking request submitted successfully",
       });
       onClose();
-      setFormData({
-        toolId: "",
-        startDate: "",
-        startTime: "09:00",
-        duration: "",
-        purpose: "",
-      });
     },
     onError: (error: any) => {
       if (isUnauthorizedError(error)) {
@@ -90,12 +97,6 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
       });
     },
   });
-  
-  useEffect(() => {
-    if (selectedToolId) {
-        setFormData(prev => ({...prev, toolId: selectedToolId.toString()}));
-    }
-  }, [selectedToolId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,8 +122,6 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
     createBookingMutation.mutate(formData);
   };
 
-  const availableTools = Array.isArray(tools) ? tools.filter((tool) => tool.status === "available") : [];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -134,16 +133,27 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
           <div>
             <Label htmlFor="tool">Select Tool *</Label>
             <Select 
-              value={formData.toolId.toString()} 
+              value={formData.toolId} 
               onValueChange={(value) => setFormData({ ...formData, toolId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Choose a tool..." />
               </SelectTrigger>
               <SelectContent>
-                {availableTools.map((tool: any) => (
-                  <SelectItem key={tool.id} value={tool.id.toString()}>
-                    {tool.name} ({tool.toolId})
+                {tools?.map((tool) => (
+                  <SelectItem 
+                    key={tool.id} 
+                    value={tool.id.toString()}
+                    disabled={tool.status !== 'available'}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>{tool.name} ({tool.toolId})</span>
+                      {tool.status !== 'available' && (
+                        <span className="text-muted-foreground capitalize ml-2">
+                          ({tool.status.replace('-', ' ')})
+                        </span>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

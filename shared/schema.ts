@@ -44,7 +44,7 @@ export const tools = pgTable("tools", {
   description: text("description"),
   category: varchar("category").notNull(),
   location: varchar("location").notNull(),
-  status: varchar("status").notNull().default("available"), // 'available', 'in-use', 'maintenance', 'out-of-order'
+  status: varchar("status").notNull().default("available"), // 'available', 'maintenance', 'out-of-order'
   imageUrl: varchar("image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

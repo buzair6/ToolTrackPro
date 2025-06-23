@@ -325,8 +325,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (updateData.status === "approved") {
           updateData.approvedBy = adminId;
           updateData.approvedAt = new Date();
-
-          await storage.updateTool(booking.toolId, { status: "in-use" });
         }
       }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -13,9 +13,10 @@ import { X, CloudUpload } from "lucide-react";
 
 interface AddToolModalProps {
   onClose: () => void;
+  toolToEdit?: any | null;
 }
 
-export default function AddToolModal({ onClose }: AddToolModalProps) {
+export default function AddToolModal({ onClose, toolToEdit }: AddToolModalProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
@@ -26,18 +27,19 @@ export default function AddToolModal({ onClose }: AddToolModalProps) {
     status: "available",
   });
 
-  const createToolMutation = useMutation({
-    mutationFn: async (toolData: any) => {
-      await apiRequest("POST", "/api/tools", toolData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tools"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({
-        title: "Success",
-        description: "Tool added successfully",
+  const isEditMode = !!toolToEdit;
+
+  useEffect(() => {
+    if (isEditMode && toolToEdit) {
+      setFormData({
+        name: toolToEdit.name,
+        toolId: toolToEdit.toolId,
+        category: toolToEdit.category,
+        description: toolToEdit.description || "",
+        location: toolToEdit.location,
+        status: toolToEdit.status,
       });
-      onClose();
+    } else {
       setFormData({
         name: "",
         toolId: "",
@@ -46,23 +48,38 @@ export default function AddToolModal({ onClose }: AddToolModalProps) {
         location: "",
         status: "available",
       });
+    }
+  }, [toolToEdit, isEditMode]);
+
+
+  const mutation = useMutation({
+    mutationFn: async (toolData: any) => {
+      const endpoint = isEditMode ? `/api/tools/${toolToEdit.id}` : "/api/tools";
+      const method = isEditMode ? "PUT" : "POST";
+      await apiRequest(method, endpoint, toolData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tools"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Success",
+        description: `Tool ${isEditMode ? 'updated' : 'added'} successfully`,
+      });
+      onClose();
     },
     onError: (error: any) => {
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          description: "You are logged out.",
           variant: "destructive",
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
         return;
       }
       
       const message = error.message?.includes("already exists") 
         ? "Tool ID already exists"
-        : "Failed to add tool";
+        : `Failed to ${isEditMode ? 'update' : 'add'} tool`;
         
       toast({
         title: "Error",
@@ -84,7 +101,7 @@ export default function AddToolModal({ onClose }: AddToolModalProps) {
       return;
     }
 
-    createToolMutation.mutate(formData);
+    mutation.mutate(formData);
   };
 
   return (
@@ -92,7 +109,7 @@ export default function AddToolModal({ onClose }: AddToolModalProps) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Add New Tool</DialogTitle>
+            <DialogTitle>{isEditMode ? 'Edit Tool' : 'Add New Tool'}</DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
@@ -197,9 +214,9 @@ export default function AddToolModal({ onClose }: AddToolModalProps) {
             <Button 
               type="submit" 
               className="flex-1" 
-              disabled={createToolMutation.isPending}
+              disabled={mutation.isPending}
             >
-              {createToolMutation.isPending ? "Adding..." : "Add Tool"}
+              {mutation.isPending ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? 'Save Changes' : 'Add Tool')}
             </Button>
           </div>
         </form>

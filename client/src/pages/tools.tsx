@@ -5,12 +5,58 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddToolModal from "@/components/modals/add-tool-modal";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Grid3X3, List, Eye, Edit3 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Plus, Search, Grid3X3, List, Eye, Edit3, Trash2 } from "lucide-react";
+
+// Modal for viewing tool details
+function ViewToolModal({ tool, onClose }: { tool: any; onClose: () => void }) {
+  if (!tool) return null;
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{tool.name}</DialogTitle>
+          <DialogDescription>Tool ID: {tool.toolId}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+            <span className="text-gray-400 text-sm">No Image</span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {tool.description || "No description available."}
+          </p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Category:</span>
+              <span className="font-medium capitalize">{tool.category.replace("-", " ")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Location:</span>
+              <span className="font-medium">{tool.location}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Status:</span>
+              <Badge className={
+                tool.status === "available" ? "status-available" :
+                tool.status === "in-use" ? "status-in-use" :
+                "status-maintenance"
+              }>{tool.status}</Badge>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function Tools() {
   const { toast } = useToast();
@@ -20,6 +66,14 @@ export default function Tools() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [editingTool, setEditingTool] = useState<any | null>(null);
+  const [viewingTool, setViewingTool] = useState<any | null>(null);
+
+  // DEBUG: Check the user object when the component renders
+  console.log("Current user object in Tools page:", user);
+  if(user) {
+    console.log("User role is:", user.role);
+  }
 
   const { data: tools, isLoading: toolsLoading } = useQuery<any[]>({
     queryKey: ["/api/tools"],
@@ -77,10 +131,24 @@ export default function Tools() {
   };
 
   const handleDeleteTool = (toolId: number) => {
+    // DEBUG: Confirm delete handler is called
+    console.log("handleDeleteTool called for tool ID:", toolId);
     if (window.confirm("Are you sure you want to delete this tool?")) {
       deleteMutation.mutate(toolId);
     }
   };
+
+  const handleOpenEditModal = (tool: any) => {
+    // DEBUG: Confirm edit handler is called
+    console.log("handleOpenEditModal called for tool:", tool);
+    setEditingTool(tool);
+    setShowAddModal(true);
+  }
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingTool(null);
+  }
 
   return (
     <>
@@ -201,16 +269,22 @@ export default function Tools() {
                     </div>
                     
                     <div className="flex space-x-2">
-                      {user?.role === "admin" && (
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Edit3 className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => { console.log("View clicked for:", tool); setViewingTool(tool); }}>
                         <Eye className="h-3 w-3 mr-1" />
                         View
                       </Button>
+                      {user?.role === "admin" && (
+                        <>
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleOpenEditModal(tool)}>
+                            <Edit3 className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDeleteTool(tool.id)}>
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Delete
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -243,14 +317,19 @@ export default function Tools() {
                           {tool.status}
                         </Badge>
                         <div className="flex space-x-2">
-                          {user?.role === "admin" && (
-                            <Button variant="outline" size="sm">
-                              <Edit3 className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => { console.log("View clicked for:", tool); setViewingTool(tool); }}>
                             <Eye className="h-3 w-3" />
                           </Button>
+                          {user?.role === "admin" && (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(tool)}>
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => handleDeleteTool(tool.id)}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -262,8 +341,15 @@ export default function Tools() {
         </CardContent>
       </Card>
 
-      {showAddModal && (
-        <AddToolModal onClose={() => setShowAddModal(false)} />
+      {(showAddModal || editingTool) && (
+        <AddToolModal
+          toolToEdit={editingTool}
+          onClose={handleCloseModal}
+        />
+      )}
+      
+      {viewingTool && (
+        <ViewToolModal tool={viewingTool} onClose={() => setViewingTool(null)} />
       )}
     </>
   );

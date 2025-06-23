@@ -30,7 +30,7 @@ export default function BookingCalendar() {
     if (tools && tools.length > 0 && !selectedTool) {
       setSelectedTool(tools[0].id.toString());
     }
-  }, [tools, selectedTool]);
+  }, [tools]);
 
   const getDateRange = () => {
     if (viewMode === "week") {
