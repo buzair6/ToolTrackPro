@@ -25,6 +25,16 @@ import {
 import { db } from "./db";
 import { eq, and, gte, lte, or, desc, asc, lt, gt, ne } from "drizzle-orm";
 
+// Define extended type for inspection with relations
+export type InspectionWithRelations = typeof checklistInspections.$inferSelect & {
+  tool: Tool;
+  template: ChecklistTemplate;
+  inspector: User;
+  items: (typeof checklistInspectionItems.$inferSelect & {
+    templateItem: ChecklistTemplateItem;
+  })[];
+};
+
 export interface IStorage {
   // Checklist Template Operations
   createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate>;
@@ -36,6 +46,7 @@ export interface IStorage {
   // Inspection Operations
   createInspection(inspectionData: { toolId: number; templateId: number; inspectedByUserId: string; items: { templateItemId: number; valueText?: string; valueBoolean?: boolean; valueImageUrl?: string }[] }): Promise<any>;
   getInspectionsForTool(toolId: number): Promise<any[]>;
+  getAllInspections(): Promise<any[]>;
   
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
@@ -77,7 +88,7 @@ export class DatabaseStorage implements IStorage {
   async createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate> {
     return db.transaction(async (tx) => {
       const [newTemplate] = await tx.insert(checklistTemplates).values(templateData).returning();
-      if (itemsData.length > 0) {
+      if (itemsData && itemsData.length > 0) {
         const itemsToInsert = itemsData.map(item => ({ ...item, templateId: newTemplate.id }));
         await tx.insert(checklistTemplateItems).values(itemsToInsert);
       }
@@ -95,7 +106,7 @@ export class DatabaseStorage implements IStorage {
 
       // Clear existing items and insert the new ones
       await tx.delete(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, templateId));
-      if (itemsData.length > 0) {
+      if (itemsData && itemsData.length > 0) {
         const itemsToInsert = itemsData.map(item => ({ ...item, templateId: updatedTemplate.id }));
         await tx.insert(checklistTemplateItems).values(itemsToInsert);
       }
@@ -144,7 +155,7 @@ export class DatabaseStorage implements IStorage {
         inspectedByUserId: inspectionData.inspectedByUserId,
       }).returning();
       
-      if (inspectionData.items.length > 0) {
+      if (inspectionData.items && inspectionData.items.length > 0) {
         const itemsToInsert = inspectionData.items.map(item => ({
           ...item,
           inspectionId: newInspection.id,
@@ -159,6 +170,17 @@ export class DatabaseStorage implements IStorage {
     const inspections = await db.select().from(checklistInspections).where(eq(checklistInspections.toolId, toolId)).orderBy(desc(checklistInspections.inspectionDate));
     // This could be expanded to return items for each inspection as well
     return inspections;
+  }
+
+  async getAllInspections(): Promise<any[]> {
+    return await db.query.checklistInspections.findMany({
+      with: {
+        tool: true,
+        template: true,
+        inspector: true,
+      },
+      orderBy: [desc(checklistInspections.inspectionDate)],
+    });
   }
     // User operations (required for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {

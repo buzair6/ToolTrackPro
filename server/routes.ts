@@ -464,6 +464,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Inspection Routes
+  app.get("/api/inspections", async (req, res) => {
+    try {
+      const inspections = await storage.getAllInspections();
+      res.json(inspections);
+    } catch (error) {
+      console.error("Error fetching inspections:", error);
+      res.status(500).json({ message: "Failed to fetch inspections" });
+    }
+  });
+
   app.post("/api/inspections", async (req, res) => {
     try {
       const sessionId = req.cookies?.session;
