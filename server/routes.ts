@@ -2,7 +2,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertToolSchema, insertBookingSchema, updateBookingSchema, insertChecklistTemplateSchema } from "@shared/schema";
+import { insertToolSchema, insertBookingSchema, updateBookingSchema, insertChecklistTemplateItemSchema } from "@shared/schema";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -16,6 +16,14 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
+
+// Zod schema for creating/updating a checklist template
+const checklistTemplateBodySchema = z.object({
+  name: z.string().min(1, { message: "Template name is required" }),
+  description: z.string().optional(),
+  items: z.array(insertChecklistTemplateItemSchema.omit({ id: true, templateId: true })).optional().default([]),
+});
+
 
 // Simple session store for demo purposes
 const sessions = new Map<string, { userId: string; expires: Date }>();
@@ -401,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/checklist-templates", async (req, res) => {
     try {
-      const { name, description, items } = insertChecklistTemplateSchema.parse(req.body);
+      const { name, description, items } = checklistTemplateBodySchema.parse(req.body);
       const template = await storage.createChecklistTemplate({ name, description }, items);
       res.status(201).json(template);
     } catch (error) {
@@ -416,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/checklist-templates/:id", async (req, res) => {
     try {
       const templateId = parseInt(req.params.id, 10);
-      const { name, description, items } = insertChecklistTemplateSchema.parse(req.body);
+      const { name, description, items } = checklistTemplateBodySchema.parse(req.body);
       const template = await storage.updateChecklistTemplate(templateId, { name, description }, items);
       res.status(200).json(template);
     } catch (error) {
