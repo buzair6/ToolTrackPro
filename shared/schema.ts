@@ -238,5 +238,11 @@ export type BookingWithRelations = Booking & {
 // Checklist types
 export type ChecklistTemplate = typeof checklistTemplates.$inferSelect;
 export type ChecklistTemplateItem = typeof checklistTemplateItems.$inferSelect;
-export type InsertChecklistTemplate = z.infer<typeof createInsertSchema(checklistTemplates)>;
-export type InsertChecklistTemplateItem = z.infer<typeof createInsertSchema(checklistTemplateItems)>;
+
+// Create Zod schemas for checklist insertion
+export const insertChecklistTemplateSchema = createInsertSchema(checklistTemplates);
+export const insertChecklistTemplateItemSchema = createInsertSchema(checklistTemplateItems);
+
+// Infer TypeScript types from the Zod schemas
+export type InsertChecklistTemplate = z.infer<typeof insertChecklistTemplateSchema>;
+export type InsertChecklistTemplateItem = z.infer<typeof insertChecklistTemplateItemSchema>;
