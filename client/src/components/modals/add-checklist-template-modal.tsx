@@ -1,3 +1,4 @@
+// buzair6/tooltrackpro/ToolTrackPro-6f84785a6a149e311d88bfdf7ddafe3f8e316550/client/src/components/modals/add-checklist-template-modal.tsx
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +52,9 @@ export default function AddChecklistTemplateModal({ isOpen, onClose, templateToE
 
   const removeItem = (index: number) => {
     const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
+    // Re-order the items
+    const reorderedItems = newItems.map((item, i) => ({ ...item, itemOrder: i }));
+    setItems(reorderedItems);
   };
   
   const mutation = useMutation({

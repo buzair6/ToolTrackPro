@@ -1,7 +1,8 @@
+// buzair6/tooltrackpro/ToolTrackPro-6f84785a6a149e311d88bfdf7ddafe3f8e316550/server/routes.ts
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertToolSchema, insertBookingSchema, updateBookingSchema } from "@shared/schema";
+import { insertToolSchema, insertBookingSchema, updateBookingSchema, insertChecklistTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -400,11 +401,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/checklist-templates", async (req, res) => {
     try {
-      // Add validation with Zod later
-      const { name, description, items } = req.body;
+      const { name, description, items } = insertChecklistTemplateSchema.parse(req.body);
       const template = await storage.createChecklistTemplate({ name, description }, items);
       res.status(201).json(template);
     } catch (error) {
+       if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid checklist data", errors: error.errors });
+      }
       console.error("Error creating checklist template:", error);
       res.status(500).json({ message: "Failed to create checklist template" });
     }
@@ -413,11 +416,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/checklist-templates/:id", async (req, res) => {
     try {
       const templateId = parseInt(req.params.id, 10);
-      // Add validation with Zod later
-      const { name, description, items } = req.body;
+      const { name, description, items } = insertChecklistTemplateSchema.parse(req.body);
       const template = await storage.updateChecklistTemplate(templateId, { name, description }, items);
       res.status(200).json(template);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid checklist data", errors: error.errors });
+      }
       console.error("Error updating checklist template:", error);
       res.status(500).json({ message: "Failed to update checklist template" });
     }
