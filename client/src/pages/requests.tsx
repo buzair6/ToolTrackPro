@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +19,31 @@ export default function Requests() {
   const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [toolFilter, setToolFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("all");
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
 
   const { data: bookings, isLoading: bookingsLoading } = useQuery<any[]>({
     queryKey: ["/api/bookings"],
     retry: false,
   });
+
+  const { data: tools } = useQuery<any[]>({
+    queryKey: ["/api/tools"],
+    retry: false,
+  });
+
+  const uniqueUsers = useMemo(() => {
+    if (!bookings) return [];
+    const usersMap = new Map();
+    bookings.forEach(booking => {
+      if (booking.user) {
+        usersMap.set(booking.user.id, booking.user);
+      }
+    });
+    return Array.from(usersMap.values());
+  }, [bookings]);
+
 
   const approveBookingMutation = useMutation({
     mutationFn: async (bookingId: number) => {
@@ -90,6 +109,8 @@ export default function Requests() {
 
   const filteredBookings = bookings?.filter((booking: any) => {
     const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
+    const matchesTool = toolFilter === "all" || booking.tool?.id.toString() === toolFilter;
+    const matchesUser = userFilter === "all" || booking.user?.id.toString() === userFilter;
     
     let matchesDate = true;
     if (dateFilter !== "all") {
@@ -111,7 +132,7 @@ export default function Requests() {
       }
     }
     
-    return matchesStatus && matchesDate;
+    return matchesStatus && matchesDate && matchesTool && matchesUser;
   }) || [];
 
   const getStatusBadgeClass = (status: string) => {
@@ -142,14 +163,14 @@ export default function Requests() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center space-x-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
-                  <SelectValue placeholder="All Requests" />
+                  <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Requests</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="denied">Denied</SelectItem>
@@ -166,6 +187,34 @@ export default function Requests() {
                   <SelectItem value="today">Today</SelectItem>
                   <SelectItem value="week">This Week</SelectItem>
                   <SelectItem value="month">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={toolFilter} onValueChange={setToolFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Tools" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tools</SelectItem>
+                  {tools?.map(tool => (
+                    <SelectItem key={tool.id} value={tool.id.toString()}>
+                      {tool.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={userFilter} onValueChange={setUserFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Users" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {uniqueUsers.map(user => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.firstName} {user.lastName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -225,7 +274,7 @@ export default function Requests() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {format(new Date(booking.startDate), "MMM dd,xRtList")}
+                          {format(new Date(booking.startDate), "MMM dd, yyyy")}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           {format(new Date(booking.startDate), "HH:mm")} - {format(new Date(booking.endDate), "HH:mm")}
