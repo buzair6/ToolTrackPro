@@ -1,3 +1,4 @@
+// buzair6/tooltrackpro/ToolTrackPro-6f84785a6a149e311d88bfdf7ddafe3f8e316550/shared/schema.ts
 import {
   pgTable,
   text,
@@ -246,3 +247,7 @@ export const insertChecklistTemplateItemSchema = createInsertSchema(checklistTem
 // Infer TypeScript types from the Zod schemas
 export type InsertChecklistTemplate = z.infer<typeof insertChecklistTemplateSchema>;
 export type InsertChecklistTemplateItem = z.infer<typeof insertChecklistTemplateItemSchema>;
+
+export type ChecklistTemplateWithItems = ChecklistTemplate & {
+  items: ChecklistTemplateItem[];
+};

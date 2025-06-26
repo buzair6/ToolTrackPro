@@ -1,3 +1,4 @@
+// buzair6/tooltrackpro/ToolTrackPro-6f84785a6a149e311d88bfdf7ddafe3f8e316550/server/storage.ts
 import {
   users,
   tools,
@@ -19,14 +20,10 @@ import {
   type ChecklistTemplateItem,
   type InsertChecklistTemplate,
   type InsertChecklistTemplateItem,
+  type ChecklistTemplateWithItems,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, or, desc, asc, lt, gt, ne } from "drizzle-orm";
-
-// Define extended type for template with items
-export type ChecklistTemplateWithItems = ChecklistTemplate & {
-  items: ChecklistTemplateItem[];
-};
 
 export interface IStorage {
   // Checklist Template Operations
