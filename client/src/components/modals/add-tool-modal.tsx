@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { X, CloudUpload } from "lucide-react";
+import { CloudUpload } from "lucide-react";
 
 interface AddToolModalProps {
   onClose: () => void;
@@ -108,12 +108,7 @@ export default function AddToolModal({ onClose, toolToEdit }: AddToolModalProps)
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>{isEditMode ? 'Edit Tool' : 'Add New Tool'}</DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle>{isEditMode ? 'Edit Tool' : 'Add New Tool'}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
