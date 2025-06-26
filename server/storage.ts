@@ -29,10 +29,9 @@ export type ChecklistTemplateWithItems = ChecklistTemplate & {
 };
 
 export interface IStorage {
-  // ... (existing user, tool, booking operations) ...
-
   // Checklist Template Operations
   createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate>;
+  updateChecklistTemplate(templateId: number, templateData: Partial<InsertChecklistTemplate>, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate>;
   getAllChecklistTemplates(): Promise<ChecklistTemplateWithItems[]>;
   getChecklistForTool(toolId: number): Promise<ChecklistTemplateWithItems | undefined>;
   assignChecklistToTool(toolId: number, templateId: number): Promise<void>;
@@ -77,8 +76,6 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // ... (existing user, tool, booking implementations) ...
-
   // Checklist Template Operations
   async createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate> {
     return db.transaction(async (tx) => {
@@ -90,9 +87,28 @@ export class DatabaseStorage implements IStorage {
       return newTemplate;
     });
   }
+  
+  async updateChecklistTemplate(templateId: number, templateData: Partial<InsertChecklistTemplate>, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate> {
+    return db.transaction(async (tx) => {
+      // Update the template details
+      const [updatedTemplate] = await tx.update(checklistTemplates)
+        .set({ ...templateData, updatedAt: new Date() })
+        .where(eq(checklistTemplates.id, templateId))
+        .returning();
+
+      // Clear existing items and insert the new ones
+      await tx.delete(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, templateId));
+      if (itemsData.length > 0) {
+        const itemsToInsert = itemsData.map(item => ({ ...item, templateId: updatedTemplate.id }));
+        await tx.insert(checklistTemplateItems).values(itemsToInsert);
+      }
+
+      return updatedTemplate;
+    });
+  }
 
   async getAllChecklistTemplates(): Promise<ChecklistTemplateWithItems[]> {
-    const templates = await db.select().from(checklistTemplates);
+    const templates = await db.select().from(checklistTemplates).orderBy(asc(checklistTemplates.name));
     const result: ChecklistTemplateWithItems[] = [];
     for (const template of templates) {
       const items = await db.select().from(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, template.id)).orderBy(asc(checklistTemplateItems.itemOrder));

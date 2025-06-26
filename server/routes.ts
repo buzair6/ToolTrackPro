@@ -409,6 +409,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create checklist template" });
     }
   });
+  
+  app.put("/api/checklist-templates/:id", async (req, res) => {
+    try {
+      const templateId = parseInt(req.params.id, 10);
+      // Add validation with Zod later
+      const { name, description, items } = req.body;
+      const template = await storage.updateChecklistTemplate(templateId, { name, description }, items);
+      res.status(200).json(template);
+    } catch (error) {
+      console.error("Error updating checklist template:", error);
+      res.status(500).json({ message: "Failed to update checklist template" });
+    }
+  });
 
   // Tool-Checklist Association
   app.post("/api/tools/:id/checklist", async (req, res) => {

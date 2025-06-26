@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import type { ChecklistTemplateWithItems, Tool } from "@shared/schema";
 
 interface AssignChecklistModalProps {
-  tool: any;
+  tool: Tool;
   onClose: () => void;
 }
 
@@ -16,22 +17,31 @@ export default function AssignChecklistModal({ tool, onClose }: AssignChecklistM
   const { toast } = useToast();
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
-  // const { data: templates } = useQuery<any[]>({
-  //   queryKey: ["/api/checklist-templates"],
-  //   retry: false,
-  // });
+  const { data: templates, isLoading: templatesLoading } = useQuery<ChecklistTemplateWithItems[]>({
+    queryKey: ["/api/checklist-templates"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+  });
 
-  const mockTemplates = [
-    { id: 1, name: "Daily Forklift Inspection" },
-    { id: 2, name: "Power Tool Maintenance" }
-  ];
+  const { data: assignedChecklist, isLoading: assignedLoading } = useQuery<ChecklistTemplateWithItems>({
+    queryKey: [`/api/tools/${tool.id}/checklist`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!tool,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (assignedChecklist) {
+      setSelectedTemplateId(assignedChecklist.id.toString());
+    }
+  }, [assignedChecklist]);
 
   const mutation = useMutation({
     mutationFn: async (templateId: string) => {
-      // await apiRequest("POST", `/api/tools/${tool.id}/checklist`, { templateId });
+      await apiRequest("POST", `/api/tools/${tool.id}/checklist`, { templateId: parseInt(templateId, 10) });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tools"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tools/${tool.id}/checklist`] });
       toast({
         title: "Success",
         description: "Checklist assigned successfully.",
@@ -68,12 +78,12 @@ export default function AssignChecklistModal({ tool, onClose }: AssignChecklistM
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div>
             <Label htmlFor="template">Checklist Template</Label>
-            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId} disabled={templatesLoading || assignedLoading}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a template..." />
+                <SelectValue placeholder={templatesLoading || assignedLoading ? "Loading..." : "Select a template..."} />
               </SelectTrigger>
               <SelectContent>
-                {mockTemplates?.map((template) => (
+                {templates?.map((template) => (
                   <SelectItem key={template.id} value={template.id.toString()}>
                     {template.name}
                   </SelectItem>
