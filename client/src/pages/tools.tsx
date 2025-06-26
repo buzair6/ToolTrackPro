@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Search, Grid3X3, List, Eye, Edit3, Trash2 } from "lucide-react";
+import { Plus, Search, Grid3X3, List, Eye, Edit3, Trash2, ClipboardPlus } from "lucide-react";
+import AssignChecklistModal from "@/components/modals/assign-checklist-modal";
 
 // Modal for viewing tool details
 function ViewToolModal({ tool, onClose }: { tool: any; onClose: () => void }) {
@@ -68,6 +69,7 @@ export default function Tools() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [editingTool, setEditingTool] = useState<any | null>(null);
   const [viewingTool, setViewingTool] = useState<any | null>(null);
+  const [assigningChecklistTool, setAssigningChecklistTool] = useState<any | null>(null);
 
   // DEBUG: Check the user object when the component renders
   console.log("Current user object in Tools page:", user);
@@ -275,13 +277,16 @@ export default function Tools() {
                       </Button>
                       {user?.role === "admin" && (
                         <>
+                           <Button variant="outline" size="sm" className="flex-1" onClick={() => setAssigningChecklistTool(tool)}>
+                            <ClipboardPlus className="h-3 w-3 mr-1" />
+                            Checklist
+                          </Button>
                           <Button variant="outline" size="sm" className="flex-1" onClick={() => handleOpenEditModal(tool)}>
                             <Edit3 className="h-3 w-3 mr-1" />
                             Edit
                           </Button>
                           <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDeleteTool(tool.id)}>
                             <Trash2 className="h-3 w-3 mr-1" />
-                            Delete
                           </Button>
                         </>
                       )}
@@ -322,6 +327,9 @@ export default function Tools() {
                           </Button>
                           {user?.role === "admin" && (
                             <>
+                              <Button variant="outline" size="sm" onClick={() => setAssigningChecklistTool(tool)}>
+                                <ClipboardPlus className="h-3 w-3" />
+                              </Button>
                               <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(tool)}>
                                 <Edit3 className="h-3 w-3" />
                               </Button>
@@ -350,6 +358,13 @@ export default function Tools() {
       
       {viewingTool && (
         <ViewToolModal tool={viewingTool} onClose={() => setViewingTool(null)} />
+      )}
+
+      {assigningChecklistTool && (
+        <AssignChecklistModal
+          tool={assigningChecklistTool}
+          onClose={() => setAssigningChecklistTool(null)}
+        />
       )}
     </>
   );

@@ -2,6 +2,11 @@ import {
   users,
   tools,
   bookings,
+  checklistTemplates,
+  checklistTemplateItems,
+  toolChecklists,
+  checklistInspections,
+  checklistInspectionItems,
   type User,
   type UpsertUser,
   type Tool,
@@ -10,11 +15,32 @@ import {
   type InsertBooking,
   type UpdateBooking,
   type BookingWithRelations,
+  type ChecklistTemplate,
+  type ChecklistTemplateItem,
+  type InsertChecklistTemplate,
+  type InsertChecklistTemplateItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, or, desc, asc, lt, gt, ne } from "drizzle-orm";
 
+// Define extended type for template with items
+export type ChecklistTemplateWithItems = ChecklistTemplate & {
+  items: ChecklistTemplateItem[];
+};
+
 export interface IStorage {
+  // ... (existing user, tool, booking operations) ...
+
+  // Checklist Template Operations
+  createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate>;
+  getAllChecklistTemplates(): Promise<ChecklistTemplateWithItems[]>;
+  getChecklistForTool(toolId: number): Promise<ChecklistTemplateWithItems | undefined>;
+  assignChecklistToTool(toolId: number, templateId: number): Promise<void>;
+
+  // Inspection Operations
+  createInspection(inspectionData: { toolId: number; templateId: number; inspectedByUserId: string; items: { templateItemId: number; valueText?: string; valueBoolean?: boolean; valueImageUrl?: string }[] }): Promise<any>;
+  getInspectionsForTool(toolId: number): Promise<any[]>;
+  
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
@@ -51,7 +77,77 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (required for Replit Auth)
+  // ... (existing user, tool, booking implementations) ...
+
+  // Checklist Template Operations
+  async createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate> {
+    return db.transaction(async (tx) => {
+      const [newTemplate] = await tx.insert(checklistTemplates).values(templateData).returning();
+      if (itemsData.length > 0) {
+        const itemsToInsert = itemsData.map(item => ({ ...item, templateId: newTemplate.id }));
+        await tx.insert(checklistTemplateItems).values(itemsToInsert);
+      }
+      return newTemplate;
+    });
+  }
+
+  async getAllChecklistTemplates(): Promise<ChecklistTemplateWithItems[]> {
+    const templates = await db.select().from(checklistTemplates);
+    const result: ChecklistTemplateWithItems[] = [];
+    for (const template of templates) {
+      const items = await db.select().from(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, template.id)).orderBy(asc(checklistTemplateItems.itemOrder));
+      result.push({ ...template, items });
+    }
+    return result;
+  }
+  
+  async assignChecklistToTool(toolId: number, templateId: number): Promise<void> {
+    await db.insert(toolChecklists)
+      .values({ toolId, templateId })
+      .onConflictDoUpdate({
+        target: toolChecklists.toolId,
+        set: { templateId },
+      });
+  }
+  
+  async getChecklistForTool(toolId: number): Promise<ChecklistTemplateWithItems | undefined> {
+    const [toolChecklist] = await db.select().from(toolChecklists).where(eq(toolChecklists.toolId, toolId));
+    if (!toolChecklist) return undefined;
+    
+    const [template] = await db.select().from(checklistTemplates).where(eq(checklistTemplates.id, toolChecklist.templateId));
+    if (!template) return undefined;
+    
+    const items = await db.select().from(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, template.id)).orderBy(asc(checklistTemplateItems.itemOrder));
+    
+    return { ...template, items };
+  }
+
+  // Inspection Operations
+  async createInspection(inspectionData: { toolId: number; templateId: number; inspectedByUserId: string; items: { templateItemId: number; valueText?: string; valueBoolean?: boolean; valueImageUrl?: string }[] }): Promise<any> {
+    return db.transaction(async (tx) => {
+      const [newInspection] = await tx.insert(checklistInspections).values({
+        toolId: inspectionData.toolId,
+        templateId: inspectionData.templateId,
+        inspectedByUserId: inspectionData.inspectedByUserId,
+      }).returning();
+      
+      if (inspectionData.items.length > 0) {
+        const itemsToInsert = inspectionData.items.map(item => ({
+          ...item,
+          inspectionId: newInspection.id,
+        }));
+        await tx.insert(checklistInspectionItems).values(itemsToInsert);
+      }
+      return newInspection;
+    });
+  }
+
+  async getInspectionsForTool(toolId: number): Promise<any[]> {
+    const inspections = await db.select().from(checklistInspections).where(eq(checklistInspections.toolId, toolId)).orderBy(desc(checklistInspections.inspectionDate));
+    // This could be expanded to return items for each inspection as well
+    return inspections;
+  }
+    // User operations (required for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;

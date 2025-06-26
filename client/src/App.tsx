@@ -19,6 +19,9 @@ import Requests from "@/pages/requests";
 import History from "@/pages/history";
 import SettingsPage from "@/pages/settings";
 import Auth from "@/pages/auth";
+import ChecklistTemplates from "@/pages/checklist-templates";
+import InspectTool from "@/pages/inspect-tool";
+
 
 // Import layout components
 import AppSidebar from "@/components/layout/sidebar";
@@ -74,6 +77,8 @@ function App() {
         <Route path="/requests" component={Requests} />
         <Route path="/history" component={History} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/checklist-templates" component={ChecklistTemplates} />
+        <Route path="/inspect-tool" component={InspectTool} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

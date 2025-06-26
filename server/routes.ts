@@ -386,6 +386,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to check availability" });
     }
   });
+  
+  // Checklist Template Routes
+  app.get("/api/checklist-templates", async (req, res) => {
+    try {
+      const templates = await storage.getAllChecklistTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching checklist templates:", error);
+      res.status(500).json({ message: "Failed to fetch checklist templates" });
+    }
+  });
+
+  app.post("/api/checklist-templates", async (req, res) => {
+    try {
+      // Add validation with Zod later
+      const { name, description, items } = req.body;
+      const template = await storage.createChecklistTemplate({ name, description }, items);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating checklist template:", error);
+      res.status(500).json({ message: "Failed to create checklist template" });
+    }
+  });
+
+  // Tool-Checklist Association
+  app.post("/api/tools/:id/checklist", async (req, res) => {
+    try {
+      const toolId = parseInt(req.params.id);
+      const { templateId } = req.body;
+      await storage.assignChecklistToTool(toolId, templateId);
+      res.status(200).json({ message: "Checklist assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning checklist:", error);
+      res.status(500).json({ message: "Failed to assign checklist" });
+    }
+  });
+  
+  app.get("/api/tools/:id/checklist", async (req, res) => {
+    try {
+      const toolId = parseInt(req.params.id);
+      const checklist = await storage.getChecklistForTool(toolId);
+      if (!checklist) {
+        return res.status(404).json({ message: "No checklist assigned to this tool." });
+      }
+      res.json(checklist);
+    } catch (error) {
+      console.error("Error fetching checklist for tool:", error);
+      res.status(500).json({ message: "Failed to fetch checklist" });
+    }
+  });
+  
+  // Inspection Routes
+  app.post("/api/inspections", async (req, res) => {
+    try {
+      const sessionId = req.cookies?.session;
+      if (!sessionId) return res.status(401).json({ message: "Not authenticated" });
+      const userId = getSessionUser(sessionId);
+      if (!userId) return res.status(401).json({ message: "Session expired" });
+
+      const inspectionData = { ...req.body, inspectedByUserId: userId };
+      const inspection = await storage.createInspection(inspectionData);
+      res.status(201).json(inspection);
+    } catch (error) {
+      console.error("Error creating inspection:", error);
+      res.status(500).json({ message: "Failed to create inspection" });
+    }
+  });
+
+  app.get("/api/tools/:id/inspections", async (req, res) => {
+    try {
+      const toolId = parseInt(req.params.id);
+      const inspections = await storage.getInspectionsForTool(toolId);
+      res.json(inspections);
+    } catch (error) {
+      console.error("Error fetching inspections for tool:", error);
+      res.status(500).json({ message: "Failed to fetch inspections" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

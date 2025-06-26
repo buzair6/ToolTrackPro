@@ -67,14 +67,60 @@ export const bookings = pgTable("bookings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const checklistTemplates = pgTable("checklist_templates", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const checklistTemplateItems = pgTable("checklist_template_items", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").notNull().references(() => checklistTemplates.id, { onDelete: 'cascade' }),
+  label: varchar("label").notNull(),
+  type: varchar("type").notNull(), // 'tick', 'value', 'image'
+  required: boolean("required").default(false),
+  itemOrder: integer("item_order").notNull(),
+});
+
+// A tool can have one checklist template
+export const toolChecklists = pgTable("tool_checklists", {
+  toolId: integer("tool_id").primaryKey().references(() => tools.id, { onDelete: 'cascade' }),
+  templateId: integer("template_id").notNull().references(() => checklistTemplates.id, { onDelete: 'cascade' }),
+});
+
+export const checklistInspections = pgTable("checklist_inspections", {
+    id: serial("id").primaryKey(),
+    toolId: integer("tool_id").notNull().references(() => tools.id),
+    templateId: integer("template_id").notNull().references(() => checklistTemplates.id),
+    inspectedByUserId: varchar("inspected_by_user_id").notNull().references(() => users.id),
+    inspectionDate: timestamp("inspection_date").defaultNow(),
+});
+
+export const checklistInspectionItems = pgTable("checklist_inspection_items", {
+    id: serial("id").primaryKey(),
+    inspectionId: integer("inspection_id").notNull().references(() => checklistInspections.id, { onDelete: 'cascade' }),
+    templateItemId: integer("template_item_id").notNull().references(() => checklistTemplateItems.id),
+    valueText: text("value_text"), // for 'value' type
+    valueBoolean: boolean("value_boolean"), // for 'tick' type
+    valueImageUrl: varchar("value_image_url"), // for 'image' type
+});
+
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   bookings: many(bookings),
   approvedBookings: many(bookings),
+  inspections: many(checklistInspections),
 }));
 
-export const toolsRelations = relations(tools, ({ many }) => ({
+export const toolsRelations = relations(tools, ({ many, one }) => ({
   bookings: many(bookings),
+  checklist: one(toolChecklists, {
+    fields: [tools.id],
+    references: [toolChecklists.toolId],
+  }),
 }));
 
 export const bookingsRelations = relations(bookings, ({ one }) => ({
@@ -91,6 +137,56 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const checklistTemplatesRelations = relations(checklistTemplates, ({ many }) => ({
+  items: many(checklistTemplateItems),
+}));
+
+export const checklistTemplateItemsRelations = relations(checklistTemplateItems, ({ one }) => ({
+  template: one(checklistTemplates, {
+    fields: [checklistTemplateItems.templateId],
+    references: [checklistTemplates.id],
+  }),
+}));
+
+export const toolChecklistsRelations = relations(toolChecklists, ({ one }) => ({
+    tool: one(tools, {
+        fields: [toolChecklists.toolId],
+        references: [tools.id],
+    }),
+    template: one(checklistTemplates, {
+        fields: [toolChecklists.templateId],
+        references: [checklistTemplates.id],
+    }),
+}));
+
+export const checklistInspectionsRelations = relations(checklistInspections, ({ one, many }) => ({
+    tool: one(tools, {
+        fields: [checklistInspections.toolId],
+        references: [tools.id],
+    }),
+    template: one(checklistTemplates, {
+        fields: [checklistInspections.templateId],
+        references: [checklistTemplates.id],
+    }),
+    inspector: one(users, {
+        fields: [checklistInspections.inspectedByUserId],
+        references: [users.id],
+    }),
+    items: many(checklistInspectionItems),
+}));
+
+export const checklistInspectionItemsRelations = relations(checklistInspectionItems, ({ one }) => ({
+    inspection: one(checklistInspections, {
+        fields: [checklistInspectionItems.inspectionId],
+        references: [checklistInspections.id],
+    }),
+    templateItem: one(checklistTemplateItems, {
+        fields: [checklistInspectionItems.templateItemId],
+        references: [checklistTemplateItems.id],
+    }),
+}));
+
 
 // Schemas
 export const insertToolSchema = createInsertSchema(tools).omit({
@@ -138,3 +234,9 @@ export type BookingWithRelations = Booking & {
   tool: Tool;
   approver?: User;
 };
+
+// Checklist types
+export type ChecklistTemplate = typeof checklistTemplates.$inferSelect;
+export type ChecklistTemplateItem = typeof checklistTemplateItems.$inferSelect;
+export type InsertChecklistTemplate = z.infer<typeof (createInsertSchema(checklistTemplates))>;
+export type InsertChecklistTemplateItem = z.infer<typeof (createInsertSchema(checklistTemplateItems))>;
