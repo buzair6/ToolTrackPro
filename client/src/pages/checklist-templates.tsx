@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
+
 // Mock data for now, will be replaced with API call
 const mockTemplates = [
   { id: 1, name: "Daily Forklift Inspection", description: "A checklist for daily forklift safety and operational checks." },
@@ -33,14 +34,24 @@ export default function ChecklistTemplates() {
       <Card>
         <CardHeader>
           <CardTitle>Existing Templates</CardTitle>
+          <CardDescription>
+            Click on a template to view or edit its details.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {mockTemplates.map((template) => (
-              <div key={template.id} className="p-4 border rounded-lg">
-                <h3 className="font-semibold">{template.name}</h3>
-                <p className="text-sm text-gray-500">{template.description}</p>
-              </div>
+              <Button
+                key={template.id}
+                variant="outline"
+                className="w-full justify-start h-auto p-4 text-left"
+                onClick={() => alert(`Clicked on ${template.name}`)}
+              >
+                <div>
+                  <h3 className="font-semibold text-base">{template.name}</h3>
+                  <p className="text-sm text-gray-500 font-normal">{template.description}</p>
+                </div>
+              </Button>
             ))}
           </div>
         </CardContent>
