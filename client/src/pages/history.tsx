@@ -11,37 +11,43 @@ import { format } from "date-fns";
 
 export default function History() {
   const { toast } = useToast();
-  const [timeRange, setTimeRange] = useState("30");
+  const [timeRange, setTimeRange] = useState("365"); // Default to last year to show all sample data
 
   const { data: bookings, isLoading: bookingsLoading } = useQuery<any[]>({
     queryKey: ["/api/bookings"],
     retry: false,
   });
 
-  // Filter completed bookings based on time range
-  const completedBookings = bookings?.filter((booking: any) => {
-    if (booking.status !== "completed") return false;
+  // Filter for approved and completed bookings based on time range
+  const historicalBookings = bookings?.filter((booking: any) => {
+    // Show both approved and completed bookings in history
+    if (booking.status !== "completed" && booking.status !== "approved") {
+      return false;
+    }
     
-    const completedDate = new Date(booking.updatedAt);
+    const bookingDate = new Date(booking.updatedAt);
     const now = new Date();
+    
+    if (timeRange === "all") return true;
+
     const daysAgo = parseInt(timeRange);
     const filterDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
     
-    return completedDate >= filterDate;
+    return bookingDate >= filterDate;
   }) || [];
 
-  // Calculate summary statistics
-  const totalBookings = completedBookings.length;
-  const totalHours = completedBookings.reduce((sum: number, booking: any) => sum + booking.duration, 0);
-  const totalCosts = completedBookings.reduce((sum: number, booking: any) => {
+  // Calculate summary statistics from the filtered bookings
+  const totalBookings = historicalBookings.length;
+  const totalHours = historicalBookings.reduce((sum: number, booking: any) => sum + booking.duration, 0);
+  const totalCosts = historicalBookings.reduce((sum: number, booking: any) => {
     return sum + (parseFloat(booking.cost) || 0);
   }, 0);
-  const totalFuelUsed = completedBookings.reduce((sum: number, booking: any) => {
+  const totalFuelUsed = historicalBookings.reduce((sum: number, booking: any) => {
     return sum + (parseFloat(booking.fuelUsed) || 0);
   }, 0);
 
   // Calculate user utilization
-  const userUtilization = completedBookings.reduce((acc: any, booking: any) => {
+  const userUtilization = historicalBookings.reduce((acc: any, booking: any) => {
     const userId = booking.user?.id;
     if (!userId) return acc;
 
@@ -146,12 +152,12 @@ export default function History() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
-              Recent Completed Bookings
+              Historical Bookings
             </CardTitle>
             
             <div className="flex items-center space-x-3">
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-48">
                   <SelectValue placeholder="Time Range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -159,6 +165,7 @@ export default function History() {
                   <SelectItem value="90">Last 3 months</SelectItem>
                   <SelectItem value="180">Last 6 months</SelectItem>
                   <SelectItem value="365">Last year</SelectItem>
+                  <SelectItem value="all">All Time</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -168,8 +175,8 @@ export default function History() {
         <CardContent>
           {bookingsLoading ? (
             <p className="text-center text-gray-500 dark:text-gray-400 py-8">Loading history...</p>
-          ) : completedBookings.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No completed bookings found</p>
+          ) : historicalBookings.length === 0 ? (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No historical bookings found</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -180,11 +187,11 @@ export default function History() {
                     <TableHead>Duration</TableHead>
                     <TableHead>Cost</TableHead>
                     <TableHead>Fuel Used</TableHead>
-                    <TableHead>Completed</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {completedBookings.map((booking: any) => (
+                  {historicalBookings.map((booking: any) => (
                     <TableRow key={booking.id}>
                       <TableCell>
                         <div className="flex items-center space-x-3">

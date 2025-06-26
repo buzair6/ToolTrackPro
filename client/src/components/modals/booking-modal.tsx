@@ -29,6 +29,8 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
     startTime: "09:00",
     duration: "",
     purpose: "",
+    cost: "",
+    fuelUsed: "",
   });
 
   const { data: tools } = useQuery<Tool[]>({
@@ -45,6 +47,8 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
         startTime: selectedTimeSlot || "09:00",
         duration: "",
         purpose: "",
+        cost: "",
+        fuelUsed: "",
       });
     }
   }, [isOpen, selectedDate, selectedToolId, selectedTimeSlot]);
@@ -55,13 +59,22 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
       const startDateTime = new Date(`${bookingData.startDate}T${bookingData.startTime}`);
       const endDateTime = new Date(startDateTime.getTime() + bookingData.duration * 60 * 60 * 1000);
 
-      await apiRequest("POST", "/api/bookings", {
+      const payload: any = {
         toolId: parseInt(bookingData.toolId, 10),
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
         duration: parseInt(bookingData.duration, 10),
         purpose: bookingData.purpose,
-      });
+      };
+
+      if (bookingData.cost) {
+        payload.cost = parseFloat(bookingData.cost);
+      }
+      if (bookingData.fuelUsed) {
+        payload.fuelUsed = parseFloat(bookingData.fuelUsed);
+      }
+
+      await apiRequest("POST", "/api/bookings", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
@@ -213,6 +226,31 @@ export default function BookingModal({ isOpen, onClose, selectedDate, selectedTo
               value={formData.purpose}
               onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="cost">Cost ($) (Optional)</Label>
+              <Input
+                id="cost"
+                type="number"
+                step="0.01"
+                placeholder="e.g., 10.50"
+                value={formData.cost}
+                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="fuelUsed">Fuel Used (L) (Optional)</Label>
+              <Input
+                id="fuelUsed"
+                type="number"
+                step="0.1"
+                placeholder="e.g., 2.5"
+                value={formData.fuelUsed}
+                onChange={(e) => setFormData({ ...formData, fuelUsed: e.target.value })}
+              />
+            </div>
           </div>
           
           <div className="flex space-x-3 pt-4">
