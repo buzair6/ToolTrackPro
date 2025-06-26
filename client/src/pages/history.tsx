@@ -34,6 +34,11 @@ export default function History() {
 
   const historicalBookings = useMemo(() => {
     return bookings?.filter((booking: any) => {
+      // **FIX:** Added a guard to handle cases where a booking's tool or user might be null.
+      if (!booking || !booking.tool || !booking.user) {
+        return false;
+      }
+
       const isHistorical = booking.status === "completed" || booking.status === "approved";
       if (!isHistorical) return false;
 
