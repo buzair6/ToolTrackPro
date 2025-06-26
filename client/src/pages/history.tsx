@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarCheck, Clock, DollarSign, Download } from "lucide-react";
+import { CalendarCheck, Clock, DollarSign, Download, Fuel, Users } from "lucide-react";
 import { format } from "date-fns";
 
 export default function History() {
@@ -36,6 +36,23 @@ export default function History() {
   const totalCosts = completedBookings.reduce((sum: number, booking: any) => {
     return sum + (parseFloat(booking.cost) || 0);
   }, 0);
+  const totalFuelUsed = completedBookings.reduce((sum: number, booking: any) => {
+    return sum + (parseFloat(booking.fuelUsed) || 0);
+  }, 0);
+
+  // Calculate user utilization
+  const userUtilization = completedBookings.reduce((acc: any, booking: any) => {
+    const userId = booking.user?.id;
+    if (!userId) return acc;
+
+    if (!acc[userId]) {
+      acc[userId] = { ...booking.user, totalBookings: 0, totalHours: 0 };
+    }
+    acc[userId].totalBookings += 1;
+    acc[userId].totalHours += booking.duration;
+
+    return acc;
+  }, {});
 
   const getUserInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.[0] || 'U'}${lastName?.[0] || ''}`;
@@ -65,7 +82,7 @@ export default function History() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -105,6 +122,20 @@ export default function History() {
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                   ${totalCosts.toFixed(2)}
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                <Fuel className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Fuel Used</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalFuelUsed.toFixed(1)} L</p>
               </div>
             </div>
           </CardContent>
@@ -193,6 +224,44 @@ export default function History() {
                 </TableBody>
               </Table>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* User Utilization Report */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5" />
+              <span>User Utilization</span>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {bookingsLoading ? (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">Loading utilization data...</p>
+          ) : Object.keys(userUtilization).length === 0 ? (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No user activity found for this period</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Total Bookings</TableHead>
+                  <TableHead>Total Hours</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.values(userUtilization).map((user: any) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
+                    <TableCell>{user.totalBookings}</TableCell>
+                    <TableCell>{user.totalHours} hours</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

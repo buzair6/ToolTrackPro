@@ -12,12 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, X, Eye, DollarSign } from "lucide-react";
 import { format } from "date-fns";
+import UpdateBookingDetailsModal from "@/components/modals/update-booking-details-modal";
 
 export default function Requests() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [editingBooking, setEditingBooking] = useState<any | null>(null);
 
   const { data: bookings, isLoading: bookingsLoading } = useQuery<any[]>({
     queryKey: ["/api/bookings"],
@@ -266,6 +268,7 @@ export default function Requests() {
                               size="sm"
                               variant="ghost"
                               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => setEditingBooking(booking)}
                             >
                               <DollarSign className="h-4 w-4" />
                             </Button>
@@ -287,6 +290,13 @@ export default function Requests() {
           )}
         </CardContent>
       </Card>
+
+      {editingBooking && (
+        <UpdateBookingDetailsModal
+          booking={editingBooking}
+          onClose={() => setEditingBooking(null)}
+        />
+      )}
     </>
   );
 }
