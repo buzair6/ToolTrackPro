@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, X, Eye, DollarSign } from "lucide-react";
 import { format } from "date-fns";
-import UpdateBookingDetailsModal from "@/components/modals/update-booking-details-modal";
+import UpdateBookingDetailsModal from "@/components/modals/UpdateBookingDetailsModal";
 
 export default function Requests() {
   const { toast } = useToast();
@@ -225,7 +225,7 @@ export default function Requests() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {format(new Date(booking.startDate), "MMM dd, yyyy")}
+                          {format(new Date(booking.startDate), "MMM dd,xRtList")}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           {format(new Date(booking.startDate), "HH:mm")} - {format(new Date(booking.endDate), "HH:mm")}
