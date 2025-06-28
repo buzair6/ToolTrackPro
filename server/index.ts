@@ -3,6 +3,8 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
+import 'dotenv/config';   // ← ← ←
+import { GoogleGenerativeAI } from "@google/generative-ai";
 dotenv.config();
 
 const app = express();
