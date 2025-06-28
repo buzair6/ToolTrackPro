@@ -21,6 +21,7 @@ import SettingsPage from "@/pages/settings";
 import Auth from "@/pages/auth";
 import ChecklistTemplates from "@/pages/checklist-templates";
 import InspectTool from "@/pages/inspect-tool";
+import AiInsightPage from "@/pages/ai-insight";
 
 
 // Import layout components
@@ -79,6 +80,7 @@ function App() {
         <Route path="/settings" component={SettingsPage} />
         <Route path="/checklist-templates" component={ChecklistTemplates} />
         <Route path="/inspect-tool" component={InspectTool} />
+        <Route path="/ai-insight" component={AiInsightPage} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

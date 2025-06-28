@@ -14,6 +14,7 @@ import {
   Hammer as Toolbox,
   ListChecks,
   ClipboardPen,
+  Sparkles,
 } from "lucide-react";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +74,7 @@ export default function AppSidebar() {
     { id: "history", label: "Booking History", icon: History, path: "/history", roles: ["admin", "user"] },
     { id: "checklist-templates", label: "Checklist Templates", icon: ListChecks, path: "/checklist-templates", roles: ["admin"] },
     { id: "inspect-tool", label: "Inspect Tool", icon: ClipboardPen, path: "/inspect-tool", roles: ["admin"] },
+    { id: "ai-insight", label: "AI Insight", icon: Sparkles, path: "/ai-insight", roles: ["admin", "user"] },
   ];
 
   const bottomMenuItems = [

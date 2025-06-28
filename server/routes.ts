@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertToolSchema, insertBookingSchema, updateBookingSchema, insertChecklistTemplateItemSchema } from "@shared/schema";
 import { z } from "zod";
+import { getAiResponse } from "./gemini";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -127,6 +128,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Auth check error:", error);
       res.status(401).json({ message: "Authentication failed" });
+    }
+  });
+
+  // AI Chat Routes
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      const sessionId = req.cookies?.session;
+      if (!sessionId) return res.status(401).json({ message: "Not authenticated" });
+      const userId = getSessionUser(sessionId);
+      if (!userId) return res.status(401).json({ message: "Session expired" });
+
+      const { message } = req.body;
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      // Get all bookings and tools data to provide context to the AI
+      const bookings = await storage.getAllBookings();
+      const tools = await storage.getAllTools();
+
+      // Construct a detailed prompt for the AI
+      const detailedPrompt = `
+        You are an AI assistant for a tool booking system called ToolBooker Pro.
+        Here is the current data from the system:
+        Tools: ${JSON.stringify(tools, null, 2)}
+        Bookings: ${JSON.stringify(bookings, null, 2)}
+
+        The user is asking: "${message}"
+
+        Please provide a helpful and insightful response based on the provided data.
+      `;
+
+      const aiResponse = await getAiResponse(detailedPrompt);
+
+      const chat = await storage.createChat({
+        userId,
+        message,
+        response: aiResponse,
+      });
+
+      res.status(201).json(chat);
+    } catch (error) {
+      console.error("Error in AI chat:", error);
+      res.status(500).json({ message: "Failed to get AI response" });
+    }
+  });
+
+  app.get("/api/ai/chats", async (req, res) => {
+    try {
+      const sessionId = req.cookies?.session;
+      if (!sessionId) return res.status(401).json({ message: "Not authenticated" });
+      const userId = getSessionUser(sessionId);
+      if (!userId) return res.status(401).json({ message: "Session expired" });
+
+      const chats = await storage.getChatsByUserId(userId);
+      res.json(chats);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+      res.status(500).json({ message: "Failed to fetch chats" });
     }
   });
 

@@ -8,6 +8,7 @@ import {
   toolChecklists,
   checklistInspections,
   checklistInspectionItems,
+  chats,
   type User,
   type UpsertUser,
   type Tool,
@@ -21,6 +22,8 @@ import {
   type InsertChecklistTemplate,
   type InsertChecklistTemplateItem,
   type ChecklistTemplateWithItems,
+  type Chat,
+  type InsertChat,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, or, desc, asc, lt, gt, ne } from "drizzle-orm";
@@ -81,9 +84,14 @@ export interface IStorage {
     pendingRequests: number;
     activeBookings: number;
   }>;
+
+  // AI Chat operations
+  createChat(chat: InsertChat): Promise<Chat>;
+  getChatsByUserId(userId: string): Promise<Chat[]>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // ... (existing methods are the same)
   // Checklist Template Operations
   async createChecklistTemplate(templateData: InsertChecklistTemplate, itemsData: Omit<InsertChecklistTemplateItem, 'templateId'>[]): Promise<ChecklistTemplate> {
     return db.transaction(async (tx) => {
@@ -429,6 +437,15 @@ export class DatabaseStorage implements IStorage {
       pendingRequests: Number(pendingRequestsResult?.count) || 0,
       activeBookings: Number(activeBookingsResult?.count) || 0,
     };
+  }
+
+  async createChat(chat: InsertChat): Promise<Chat> {
+    const [newChat] = await db.insert(chats).values(chat).returning();
+    return newChat;
+  }
+
+  async getChatsByUserId(userId: string): Promise<Chat[]> {
+    return await db.select().from(chats).where(eq(chats.userId, userId)).orderBy(asc(chats.createdAt));
   }
 }
 

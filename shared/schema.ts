@@ -108,12 +108,21 @@ export const checklistInspectionItems = pgTable("checklist_inspection_items", {
     valueImageUrl: varchar("value_image_url"), // for 'image' type
 });
 
+export const chats = pgTable("chats", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  message: text("message").notNull(),
+  response: text("response").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   bookings: many(bookings),
   approvedBookings: many(bookings),
   inspections: many(checklistInspections),
+  chats: many(chats),
 }));
 
 export const toolsRelations = relations(tools, ({ many, one }) => ({
@@ -188,6 +197,12 @@ export const checklistInspectionItemsRelations = relations(checklistInspectionIt
     }),
 }));
 
+export const chatsRelations = relations(chats, ({ one }) => ({
+    user: one(users, {
+        fields: [chats.userId],
+        references: [users.id],
+    }),
+}));
 
 // Schemas
 export const insertToolSchema = createInsertSchema(tools).omit({
@@ -228,6 +243,8 @@ export type InsertTool = z.infer<typeof insertToolSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type UpdateBooking = z.infer<typeof updateBookingSchema>;
+export type Chat = typeof chats.$inferSelect;
+export type InsertChat = typeof chats.$inferInsert;
 
 // Extended types with relations
 export type BookingWithRelations = Booking & {
