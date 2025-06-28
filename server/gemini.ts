@@ -22,7 +22,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 export async function getAiResponse(prompt: string): Promise<string> {
   try {
     // pick the model you need:
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-experimental" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // call the API
     const result = await model.generateContent(prompt);
