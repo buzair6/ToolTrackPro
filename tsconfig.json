@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "imports": {
+    "@shared/*": "./shared/*"
+  },
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
@@ -11,7 +14,6 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.14.1",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
@@ -97,5 +99,4 @@
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
   }
-}
 }
