@@ -1,4 +1,4 @@
-// buzair6/tooltrackpro/ToolTrackPro-6f84785a6a149e311d88bfdf7ddafe3f8e316550/server/storage.ts
+// buzair6/tooltrackpro/ToolTrackPro-8a5ce222c6a9b31c2381b39645d88b4ea0eb842e/server/storage.ts
 import {
   users,
   tools,
@@ -26,7 +26,7 @@ import {
   type InsertChat,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, or, desc, asc, lt, gt, ne } from "drizzle-orm";
+import { eq, and, gte, lte, or, desc, asc, lt, gt, ne, sql } from "drizzle-orm";
 
 // Define extended type for inspection with relations
 export type InspectionWithRelations = typeof checklistInspections.$inferSelect & {
@@ -37,6 +37,20 @@ export type InspectionWithRelations = typeof checklistInspections.$inferSelect &
     templateItem: ChecklistTemplateItem;
   })[];
 };
+
+// Helper function to get number of working days in a month (Monday-Friday)
+function getWorkingDaysInMonth(year: number, month: number): number {
+    let workingDays = 0;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month, day);
+        const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+        if (dayOfWeek > 0 && dayOfWeek < 6) { // Monday to Friday
+            workingDays++;
+        }
+    }
+    return workingDays;
+}
 
 export interface IStorage {
   // Checklist Template Operations
@@ -83,6 +97,8 @@ export interface IStorage {
     availableTools: number;
     pendingRequests: number;
     activeBookings: number;
+    toolAvailability: number;
+    toolUtilization: number;
   }>;
 
   // AI Chat operations
@@ -404,24 +420,26 @@ export class DatabaseStorage implements IStorage {
     availableTools: number;
     pendingRequests: number;
     activeBookings: number;
+    toolAvailability: number;
+    toolUtilization: number;
   }> {
     const [totalToolsResult] = await db
-      .select({ count: tools.id })
+      .select({ count: sql<number>`cast(count(${tools.id}) as int)` })
       .from(tools);
     
     const [availableToolsResult] = await db
-      .select({ count: tools.id })
+      .select({ count: sql<number>`cast(count(${tools.id}) as int)` })
       .from(tools)
       .where(eq(tools.status, "available"));
     
     const [pendingRequestsResult] = await db
-      .select({ count: bookings.id })
+      .select({ count: sql<number>`cast(count(${bookings.id}) as int)` })
       .from(bookings)
       .where(eq(bookings.status, "pending"));
     
     const now = new Date();
     const [activeBookingsResult] = await db
-      .select({ count: bookings.id })
+      .select({ count: sql<number>`cast(count(${bookings.id}) as int)` })
       .from(bookings)
       .where(
         and(
@@ -430,12 +448,40 @@ export class DatabaseStorage implements IStorage {
           gte(bookings.endDate, now)
         )
       );
+      
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const workingDays = getWorkingDaysInMonth(year, month);
+    const shiftHours = 11; // 8:00 to 19:00
+
+    const totalAvailableHours = (totalToolsResult.count || 0) * workingDays * shiftHours;
+    
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0);
+
+    const monthlyBookings = await db
+        .select({ duration: bookings.duration })
+        .from(bookings)
+        .where(
+            and(
+                eq(bookings.status, 'approved'),
+                gte(bookings.startDate, startOfMonth),
+                lte(bookings.startDate, endOfMonth)
+            )
+        );
+
+    const totalBookedHours = monthlyBookings.reduce((sum, b) => sum + (b.duration || 0), 0);
+
+    const toolUtilization = totalAvailableHours > 0 ? (totalBookedHours / totalAvailableHours) * 100 : 0;
+    const toolAvailability = 100 - toolUtilization;
 
     return {
-      totalTools: Number(totalToolsResult?.count) || 0,
-      availableTools: Number(availableToolsResult?.count) || 0,
-      pendingRequests: Number(pendingRequestsResult?.count) || 0,
-      activeBookings: Number(activeBookingsResult?.count) || 0,
+      totalTools: totalToolsResult.count || 0,
+      availableTools: availableToolsResult.count || 0,
+      pendingRequests: pendingRequestsResult.count || 0,
+      activeBookings: activeBookingsResult.count || 0,
+      toolAvailability: parseFloat(toolAvailability.toFixed(2)),
+      toolUtilization: parseFloat(toolUtilization.toFixed(2)),
     };
   }
 
