@@ -76,7 +76,7 @@ export default function BookingModal({
       } else {
         setFormData({
           toolId: selectedToolId?.toString() || "",
-          startDate: selectedDate ? selectedDate.toISOString().split("T")[0] : "",
+          startDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
           startTime: selectedTimeSlot || "09:00",
           duration: "",
           purpose: "",
