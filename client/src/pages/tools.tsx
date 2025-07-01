@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -8,10 +8,38 @@ import AddToolModal from "@/components/modals/add-tool-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Search, Grid3X3, List, Eye, Edit3, Trash2, ClipboardPlus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  Search,
+  Grid3X3,
+  List,
+  Eye,
+  Edit3,
+  Trash2,
+  ClipboardPlus,
+  MoreVertical,
+} from "lucide-react";
 import AssignChecklistModal from "@/components/modals/assign-checklist-modal";
 
 // Modal for viewing tool details
@@ -35,7 +63,9 @@ function ViewToolModal({ tool, onClose }: { tool: any; onClose: () => void }) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Category:</span>
-              <span className="font-medium capitalize">{tool.category.replace("-", " ")}</span>
+              <span className="font-medium capitalize">
+                {tool.category.replace("-", " ")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Location:</span>
@@ -43,16 +73,24 @@ function ViewToolModal({ tool, onClose }: { tool: any; onClose: () => void }) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status:</span>
-              <Badge className={
-                tool.status === "available" ? "status-available" :
-                tool.status === "in-use" ? "status-in-use" :
-                "status-maintenance"
-              }>{tool.status}</Badge>
+              <Badge
+                className={
+                  tool.status === "available"
+                    ? "status-available"
+                    : tool.status === "in-use"
+                      ? "status-in-use"
+                      : "status-maintenance"
+                }
+              >
+                {tool.status}
+              </Badge>
             </div>
           </div>
         </div>
         <div className="flex justify-end">
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -69,11 +107,12 @@ export default function Tools() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [editingTool, setEditingTool] = useState<any | null>(null);
   const [viewingTool, setViewingTool] = useState<any | null>(null);
-  const [assigningChecklistTool, setAssigningChecklistTool] = useState<any | null>(null);
+  const [assigningChecklistTool, setAssigningChecklistTool] =
+    useState<any | null>(null);
 
   // DEBUG: Check the user object when the component renders
   console.log("Current user object in Tools page:", user);
-  if(user) {
+  if (user) {
     console.log("User role is:", user.role);
   }
 
@@ -110,14 +149,18 @@ export default function Tools() {
     },
   });
 
-  const filteredTools = tools?.filter((tool: any) => {
-    const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         tool.toolId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || tool.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || tool.category === categoryFilter;
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  }) || [];
+  const filteredTools =
+    tools?.filter((tool: any) => {
+      const matchesSearch =
+        tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tool.toolId.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || tool.status === statusFilter;
+      const matchesCategory =
+        categoryFilter === "all" || tool.category === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
+    }) || [];
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -145,20 +188,24 @@ export default function Tools() {
     console.log("handleOpenEditModal called for tool:", tool);
     setEditingTool(tool);
     setShowAddModal(true);
-  }
+  };
 
   const handleCloseModal = () => {
     setShowAddModal(false);
     setEditingTool(null);
-  }
+  };
 
   return (
     <>
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-medium text-gray-900 dark:text-white mb-2">Tools Management</h2>
-            <p className="text-gray-600 dark:text-gray-400">Manage your tool inventory and availability</p>
+            <h2 className="text-2xl font-medium text-gray-900 dark:text-white mb-2">
+              Tools Management
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manage your tool inventory and availability
+            </p>
           </div>
           {user?.role === "admin" && (
             <Button onClick={() => setShowAddModal(true)}>
@@ -182,7 +229,7 @@ export default function Tools() {
                   className="pl-10 w-64"
                 />
               </div>
-              
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="All Status" />
@@ -194,7 +241,7 @@ export default function Tools() {
                   <SelectItem value="maintenance">Maintenance</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="All Categories" />
@@ -203,12 +250,16 @@ export default function Tools() {
                   <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="power-tools">Power Tools</SelectItem>
                   <SelectItem value="hand-tools">Hand Tools</SelectItem>
-                  <SelectItem value="safety-equipment">Safety Equipment</SelectItem>
-                  <SelectItem value="measuring-tools">Measuring Tools</SelectItem>
+                  <SelectItem value="safety-equipment">
+                    Safety Equipment
+                  </SelectItem>
+                  <SelectItem value="measuring-tools">
+                    Measuring Tools
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Button
                 variant={viewMode === "grid" ? "default" : "ghost"}
@@ -230,18 +281,25 @@ export default function Tools() {
 
         <CardContent>
           {toolsLoading ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">Loading tools...</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+              Loading tools...
+            </p>
           ) : filteredTools.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No tools found</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+              No tools found
+            </p>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredTools.map((tool: any) => (
-                <Card key={tool.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={tool.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardContent className="p-4">
                     <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg mb-3 flex items-center justify-center">
                       <span className="text-gray-400 text-sm">No Image</span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {tool.name}
@@ -250,11 +308,11 @@ export default function Tools() {
                         {tool.status}
                       </Badge>
                     </div>
-                    
+
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
                       {tool.description || "No description available"}
                     </p>
-                    
+
                     <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400 mb-4">
                       <div className="flex justify-between">
                         <span>ID:</span>
@@ -262,33 +320,63 @@ export default function Tools() {
                       </div>
                       <div className="flex justify-between">
                         <span>Category:</span>
-                        <span className="capitalize">{tool.category.replace("-", " ")}</span>
+                        <span className="capitalize">
+                          {tool.category.replace("-", " ")}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Location:</span>
                         <span>{tool.location}</span>
                       </div>
                     </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => { console.log("View clicked for:", tool); setViewingTool(tool); }}>
+
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          console.log("View clicked for:", tool);
+                          setViewingTool(tool);
+                        }}
+                      >
                         <Eye className="h-3 w-3 mr-1" />
                         View
                       </Button>
                       {user?.role === "admin" && (
-                        <>
-                           <Button variant="outline" size="sm" className="flex-1" onClick={() => setAssigningChecklistTool(tool)}>
-                            <ClipboardPlus className="h-3 w-3 mr-1" />
-                            Checklist
-                          </Button>
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleOpenEditModal(tool)}>
-                            <Edit3 className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                          <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDeleteTool(tool.id)}>
-                            <Trash2 className="h-3 w-3 mr-1" />
-                          </Button>
-                        </>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 shrink-0"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">More actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setAssigningChecklistTool(tool)}
+                            >
+                              <ClipboardPlus className="mr-2 h-4 w-4" />
+                              <span>Checklist</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditModal(tool)}
+                            >
+                              <Edit3 className="mr-2 h-4 w-4" />
+                              <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteTool(tool.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   </CardContent>
@@ -303,14 +391,17 @@ export default function Tools() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">No Image</span>
+                          <span className="text-gray-400 text-xs">
+                            No Image
+                          </span>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                             {tool.name}
                           </h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {tool.toolId} • {tool.category.replace("-", " ")} • {tool.location}
+                            {tool.toolId} • {tool.category.replace("-", " ")} •{" "}
+                            {tool.location}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {tool.description || "No description available"}
@@ -322,18 +413,39 @@ export default function Tools() {
                           {tool.status}
                         </Badge>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => { console.log("View clicked for:", tool); setViewingTool(tool); }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              console.log("View clicked for:", tool);
+                              setViewingTool(tool);
+                            }}
+                          >
                             <Eye className="h-3 w-3" />
                           </Button>
                           {user?.role === "admin" && (
                             <>
-                              <Button variant="outline" size="sm" onClick={() => setAssigningChecklistTool(tool)}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setAssigningChecklistTool(tool)
+                                }
+                              >
                                 <ClipboardPlus className="h-3 w-3" />
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(tool)}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal(tool)}
+                              >
                                 <Edit3 className="h-3 w-3" />
                               </Button>
-                              <Button variant="destructive" size="sm" onClick={() => handleDeleteTool(tool.id)}>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteTool(tool.id)}
+                              >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </>
@@ -350,12 +462,9 @@ export default function Tools() {
       </Card>
 
       {(showAddModal || editingTool) && (
-        <AddToolModal
-          toolToEdit={editingTool}
-          onClose={handleCloseModal}
-        />
+        <AddToolModal toolToEdit={editingTool} onClose={handleCloseModal} />
       )}
-      
+
       {viewingTool && (
         <ViewToolModal tool={viewingTool} onClose={() => setViewingTool(null)} />
       )}
