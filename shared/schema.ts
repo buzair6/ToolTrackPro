@@ -1,4 +1,4 @@
-// buzair6/tooltrackpro/ToolTrackPro-6f84785a6a149e311d88bfdf7ddafe3f8e316550/shared/schema.ts
+// buzair6/tooltrackpro/ToolTrackPro-8a5ce222c6a9b31c2381b39645d88b4ea0eb842e/shared/schema.ts
 import {
   pgTable,
   text,
@@ -229,6 +229,8 @@ export const updateBookingSchema = createInsertSchema(bookings, {
     // Use z.coerce.date() to handle string-to-Date conversion
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
+    cost: z.coerce.number().optional(),
+    fuelUsed: z.coerce.number().optional(),
 }).partial().omit({
   id: true,
   createdAt: true,
